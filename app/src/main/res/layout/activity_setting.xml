@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    tools:context=".SettingActivity">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="180dp"
+        android:layout_height="76dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="115dp"
+        android:layout_marginTop="41dp"
+        android:layout_marginEnd="117dp"
+        android:gravity="center"
+        android:fontFamily="@font/spptitle"
+        android:text="设置"
+        android:textColor="@color/colorDarkGray"
+        android:textSize="58sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="539dp"
+        android:orientation="vertical"
+        android:layout_below="@+id/textView"
+        android:layout_marginStart="30dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginTop="21dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/thaisansneue_semibold"
+                android:text="@string/system_gnss"
+                android:textColor="@color/colorGray"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/sppsetting_GnssSystem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:fontFamily="@font/thaisansneue_light"
+                android:text="@string/system_gnss_default"
+                android:textColor="@color/colorDarkGray"
+                android:textSize="25sp" />
+
+            <TextView
+                android:id="@+id/sppsetting_btnGnssSystem"
+                android:layout_width="60dp"
+                android:layout_height="30dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+
+                android:fontFamily="@font/thaisansneue_light"
+                android:gravity="center"
+                android:text="@string/edit"
+                android:textColor="@color/colorGray"
+                android:textSize="15sp" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/thaisansneue_semibold"
+                android:text="单双频选择"
+                android:textColor="@color/colorGray"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/sppsetting_frequency"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:fontFamily="@font/thaisansneue_light"
+                android:text="单频"
+                android:textColor="@color/colorDarkGray"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/sppsetting_btnfrequency"
+                android:layout_width="60dp"
+                android:layout_height="30dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+
+                android:fontFamily="@font/thaisansneue_light"
+                android:gravity="center"
+                android:text="@string/edit"
+                android:textColor="@color/colorGray"
+                android:textSize="15sp" />
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/thaisansneue_semibold"
+                android:text="是否记录观测文件"
+                android:textColor="@color/colorGray"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/sppsetting_Record"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:fontFamily="@font/thaisansneue_light"
+                android:text="否"
+                android:textColor="@color/colorDarkGray"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/sppsetting_btnRecord"
+                android:layout_width="60dp"
+                android:layout_height="30dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+
+                android:fontFamily="@font/thaisansneue_light"
+                android:gravity="center"
+                android:text="@string/edit"
+                android:textColor="@color/colorGray"
+                android:textSize="15sp" />
+
+        </RelativeLayout>
+    </LinearLayout>
+
+
+</RelativeLayout>

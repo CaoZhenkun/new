@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">NEW</string>
+
+    <string name="system_gnss">卫星系统选择</string>
+    <string name="system_gnss_default">GPS/GLO/GAL/BDS/QZSS</string>
+    <string name="edit">修改</string>
+</resources>

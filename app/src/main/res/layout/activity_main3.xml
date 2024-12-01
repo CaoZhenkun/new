@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity3">
+
+    <TextView
+        android:id="@+id/result"
+        android:layout_width="196dp"
+        android:layout_height="110dp"
+        android:layout_marginTop="608dp"
+        android:gravity="center"
+        android:text="结果"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.906"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/number"
+        android:layout_width="140dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="652dp"
+        android:gravity="center"
+        android:text="数目"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.059"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/notice"
+        android:layout_width="196dp"
+        android:layout_height="88dp"
+        android:layout_marginTop="236dp"
+        android:gravity="center"
+        android:text=""
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tiaoshi"
+        android:layout_width="389dp"
+        android:layout_height="73dp"
+        android:layout_marginTop="340dp"
+        android:gravity="center"
+        android:text="调试信息"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.392"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeall"
+        android:layout_width="314dp"
+        android:layout_height="45dp"
+        android:layout_marginTop="488dp"
+        android:gravity="center"
+        android:text="历元观测数目"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.938"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizegal"
+        android:layout_width="92dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="432dp"
+        android:gravity="center"
+        android:text="gal"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.285"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeglo"
+        android:layout_width="98dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="428dp"
+        android:gravity="center"
+        android:text="glo"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.623"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizebds"
+        android:layout_width="85dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="432dp"
+        android:gravity="center"
+        android:text="bds"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.929"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeagps"
+        android:layout_width="84dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="432dp"
+        android:gravity="center"
+        android:text="gps"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeqzss"
+        android:layout_width="81dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="488dp"
+        android:gravity="center"
+        android:text="qzss"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.025"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizegal1"
+        android:layout_width="92dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="540dp"
+        android:gravity="center"
+        android:text="gal颗"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.335"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeglo1"
+        android:layout_width="98dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="536dp"
+        android:gravity="center"
+        android:text="glo颗"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.654"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizebds1"
+        android:layout_width="85dp"
+        android:layout_height="42dp"
+        android:layout_marginTop="536dp"
+        android:gravity="center"
+        android:text="bds颗"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.981"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeagps1"
+        android:layout_width="84dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="540dp"
+        android:gravity="center"
+        android:text="gps颗"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.027"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/sizeqzss1"
+        android:layout_width="81dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="600dp"
+        android:gravity="center"
+        android:text="qzss颗"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.03"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/Start"
+        android:layout_width="172dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="16dp"
+        android:text="开始记录"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.502"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonSky"
+        android:layout_width="172dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="92dp"
+        android:text="卫星天顶图"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.506"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/settingButtonFrom3"
+        android:layout_width="172dp"
+        android:layout_height="70dp"
+        android:layout_marginTop="168dp"
+        android:text="设置"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.506"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/map"
+        android:layout_width="82dp"
+        android:layout_height="63dp"
+        android:layout_marginTop="96dp"
+        android:text="地图"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.036"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
