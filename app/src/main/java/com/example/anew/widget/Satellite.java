@@ -1,4 +1,4 @@
-package com.example.anew;
+package com.example.anew.widget;
 
 public class Satellite {
     public String name; // 卫星导航系统的名称

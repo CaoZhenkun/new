@@ -1,8 +1,6 @@
 package com.example.anew.Constellations;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.SharedPreferences;
 import android.location.GnssClock;
 
 import android.location.GnssMeasurement;
@@ -16,26 +14,23 @@ import android.util.Log;
 
 
 import com.example.anew.Constants;
-import com.example.anew.MainActivity3;
+import com.example.anew.GNSSData;
 import com.example.anew.Ntrip.GNSSEphemericsNtrip;
 import com.example.anew.PositioningData;
 //import com.gnss.gnssdatalogger.Ntrip.GNSSEphemericsNtrip;
 import com.example.anew.coord.Coordinates;
 import com.example.anew.Satellites.*;
-import com.example.anew.PositioningData.GNSSData;
+import com.example.anew.GNSSData;
 
 import com.example.anew.coord.SatellitePosition;
 import com.example.anew.corrections.*;
-import com.example.anew.navifromftp.RinexNavigationGps;
 import com.example.anew.GNSSConstants;
 import com.example.anew.navifromftp.RinexNavigationGpsNEW;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public class GnssConstellation   {
@@ -57,7 +52,7 @@ public class GnssConstellation   {
     private long FullBiasNanos;
     private double BiasNanos;
     protected double tRxGPS;
-    protected long weekNumberNanos;
+    protected double weekNumberNanos;
     private Handler uiHandler;
 
     public static boolean approximateEqual(double a, double b, double eps) {
@@ -74,7 +69,7 @@ public class GnssConstellation   {
     private int BDS_SYSTEM;
     private int QZSS_SYSTEM;
 
-    private RinexNavigationGps mrinexNavigationM=new RinexNavigationGps();
+
     private RinexNavigationGpsNEW mrinexNavigationMnew=new RinexNavigationGpsNEW();
     //private RinexNavigationParser mRinexNavigationParser=new RinexNavigationParser();
 
@@ -111,10 +106,115 @@ public class GnssConstellation   {
 //            }
 //        }
 //    }
+public void updateMeasurements1(GnssMeasurementsEvent event) {
 
+    synchronized (this) {
+        //初始化变量
+        positioningData.gnssDataArrayListtest.clear();
+        //获取 GNSS 时钟信息
+        GnssClock gnssClock = event.getClock();//获取 GNSS 时钟信息Gets the GNSS receiver clock information associated with the measurements for the current event.
+        long TimeNanos = gnssClock.getTimeNanos();//获取当前时间的纳秒数
+        //timeRefMsec = new Time(System.currentTimeMillis());//获取当前时间的毫秒数
+        double BiasNanos = gnssClock.getBiasNanos();//获取时钟偏差的纳秒数
+        double gpsTime, pseudorange;
+
+        // Use only the first instance of the FullBiasNanos (as done in gps-measurement-tools)
+        //仅使用 FullBiasNanos 的第一个实例（就像在 gps-measurement-tools 中所做的那样）
+        if (!fullBiasNanosInitialized) {
+            if(!gnssClock.hasFullBiasNanos())
+            {
+                return;
+            }
+            FullBiasNanos = gnssClock.getFullBiasNanos();
+            fullBiasNanosInitialized = true;
+        }
+
+
+        for (GnssMeasurement measurement : event.getMeasurements()) {
+
+            if (measurement.getConstellationType() != GnssStatus.CONSTELLATION_GPS)
+                continue;
+
+            if (measurement.hasCarrierFrequencyHz())
+                if (!approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE))
+                    continue;
+
+            long ReceivedSvTimeNanos = measurement.getReceivedSvTimeNanos();
+            double TimeOffsetNanos = measurement.getTimeOffsetNanos();
+
+            gpsTime =
+                    TimeNanos - (FullBiasNanos + BiasNanos); // TODO intersystem bias?
+
+
+            tRxGPS =
+                    gpsTime + TimeOffsetNanos;
+
+            weekNumberNanos =
+                    Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK)
+                            * Constants.NUMBER_NANO_SECONDS_PER_WEEK;
+
+            //计算伪距
+            pseudorange =
+                    (tRxGPS - weekNumberNanos - ReceivedSvTimeNanos) / 1.0E9
+                            * Constants.SPEED_OF_LIGHT;
+
+            // TODO Check that the measurement have a valid state such that valid pseudoranges are used in the PVT algorithm
+
+                /*
+
+                According to https://developer.android.com/ the GnssMeasurements States required
+                for GPS valid pseudoranges are:
+
+                int STATE_CODE_LOCK         = 1      (1 << 0)
+                int int STATE_TOW_DECODED   = 8      (1 << 3)
+
+                */
+            //检查测量状态，确保测量状态满足条件（如 STATE_CODE_LOCK 和 STATE_TOW_DECODED）
+            int measState = measurement.getState();
+
+            // Bitwise AND to identify the states
+            boolean codeLock = (measState & GnssMeasurement.STATE_CODE_LOCK) != 0;//检查是否已经码锁定（STATE_CODE_LOCK）
+            boolean towDecoded = (measState & GnssMeasurement.STATE_TOW_DECODED) != 0;// 检查是否已经解码时间（STATE_TOW_DECODED）
+            boolean towKnown = false;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                // 检查当前设备的 API 级别是否大于或等于 Android O（API 级别 26）
+                towKnown = (measState & GnssMeasurement.STATE_TOW_KNOWN) != 0;
+                // 如果设备的 API 级别大于或等于 Android O，检查是否已知时间（STATE_TOW_KNOWN）
+                //STATE_TOW_KNOWN:这个GNSS测量的跟踪状态已经知道了周时间（Time-of-Week），可能没有通过空中解码，但已经通过其他来源确定。
+            }
+            //如果测量状态满足条件，则创建 SatelliteParameters 对象并添加到 observedSatellites 列表中。
+            //否则，创建 SatelliteParameters 对象并添加到 unusedSatellites 列表中，并增加 visibleButNotUsed 计数。
+            if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) { // && towUncertainty
+                //存储卫星参数的对象
+                GNSSData gnssData=new GNSSData();
+
+                gnssData.setSATstate(1);
+                gnssData.setGnssType('G');
+                gnssData.setpseudorange(pseudorange);//存储伪距
+                gnssData.setSATID(measurement.getSvid());//存储卫星ID
+
+
+
+
+                //measurement.getCn0DbHz()获取载噪比（C/N0），单位为dB-Hz。
+                gnssData.setSnr(measurement.getCn0DbHz());
+
+
+                if (measurement.hasCarrierFrequencyHz())
+                    //如果有载波，获取载波频率
+                    gnssData.setFrequency(measurement.getCarrierFrequencyHz());
+
+                positioningData.gnssDataArrayListtest.add(gnssData);
+
+
+            }
+        }
+        System.out.println("here");
+    }
+}
     public void updateMeasurements(GnssMeasurementsEvent event) {
         synchronized (this) {
-            positioningData.gnssDataArrayList.clear();;
+            positioningData.gnssDataArrayList.clear();
             positioningData.gpsDataList.clear();
             positioningData.galileoDataList.clear();
             positioningData.bdsDataList.clear();
@@ -141,13 +241,13 @@ public class GnssConstellation   {
             }
 
             for (GnssMeasurement measurement : event.getMeasurements()) {
-                if(measurement.getConstellationType() != GnssStatus.CONSTELLATION_GPS)
-                {
-                    continue;
-                }
+//                if(measurement.getConstellationType() != GnssStatus.CONSTELLATION_GPS)
+//                {
+//                    continue;
+//                }
 
                 weekNumberNanos =
-                        (long) (Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK)
+                         (Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK)
                                                         * Constants.NUMBER_NANO_SECONDS_PER_WEEK);
 
                 double TimeOffsetNanos=measurement.getTimeOffsetNanos();
@@ -286,7 +386,7 @@ public class GnssConstellation   {
                     towKnown = (measState & GnssMeasurement.STATE_TOW_KNOWN) != 0;
                 }
                 if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) {
-                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                    GNSSData gnssData=new GNSSData();
                     gnssData.setSATstate(1);
                     gnssData.setGnssType(GnssType);
                     gnssData.setFrequency(frequency);
@@ -351,11 +451,11 @@ public class GnssConstellation   {
             /**
              * 存放历元下的不同卫星的原始数据
              */
-            List<PositioningData.GNSSData> epochgps_observedSatellites = positioningData.gpsDataList;
-            List<PositioningData.GNSSData> epochqzss_observedSatellites = positioningData.qzssDataList;
-            List<PositioningData.GNSSData> epochbds_observedSatellites = positioningData.bdsDataList;
-            List<PositioningData.GNSSData> epochgalileo_observedSatellites = positioningData.galileoDataList;
-            List<PositioningData.GNSSData> epochglonass_observedSatellites = positioningData.glonassDataList;
+            List<GNSSData> epochgps_observedSatellites = positioningData.gpsDataList;
+            List<GNSSData> epochqzss_observedSatellites = positioningData.qzssDataList;
+            List<GNSSData> epochbds_observedSatellites = positioningData.bdsDataList;
+            List<GNSSData> epochgalileo_observedSatellites = positioningData.galileoDataList;
+            List<GNSSData> epochglonass_observedSatellites = positioningData.glonassDataList;
             List<String> hasDoublesvid = new ArrayList<>();
 
             {
@@ -446,7 +546,7 @@ public class GnssConstellation   {
                                     gpsSatellite.setD5(epochgps_observedSatellites.get(j).getDoppler());
                                     positioningData.gpsSatelliteList.add(gpsSatellite);
 
-                                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                    GNSSData gnssData=new GNSSData();
                                     gnssData.setPrn(prn);
                                     gnssData.setP_IF(epochgps_observedSatellites.get(i).getpseudorange(),epochgps_observedSatellites.get(j).getpseudorange());
                                     gnssData.setpseudorange(gnssData.getP_IF());
@@ -470,7 +570,7 @@ public class GnssConstellation   {
                                     gpsSatellite.setD5(epochgps_observedSatellites.get(i).getDoppler());
                                     positioningData.gpsSatelliteList.add(gpsSatellite);
 
-                                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                    GNSSData gnssData=new GNSSData();
                                     gnssData.setPrn(prn);
                                     gnssData.setP_IF(epochgps_observedSatellites.get(j).getpseudorange(),epochgps_observedSatellites.get(i).getpseudorange());
                                     gnssData.setpseudorange(gnssData.getP_IF());
@@ -634,7 +734,7 @@ public class GnssConstellation   {
                                     qzssSatellite.setD5(epochqzss_observedSatellites.get(j).getDoppler());
                                     positioningData.qzssSatelliteList.add(qzssSatellite);
 
-                                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                    GNSSData gnssData=new GNSSData();
                                     gnssData.setPrn(prn);
                                     gnssData.setP_IF(epochgps_observedSatellites.get(i).getpseudorange(),epochgps_observedSatellites.get(j).getpseudorange());
                                     gnssData.setpseudorange(gnssData.getP_IF());
@@ -659,7 +759,7 @@ public class GnssConstellation   {
                                     qzssSatellite.setD5(epochqzss_observedSatellites.get(i).getDoppler());
                                     positioningData.qzssSatelliteList.add(qzssSatellite);
 
-                                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                    GNSSData gnssData=new GNSSData();
                                     gnssData.setPrn(prn);
                                     gnssData.setP_IF(epochgps_observedSatellites.get(j).getpseudorange(),epochgps_observedSatellites.get(i).getpseudorange());
                                     gnssData.setpseudorange(gnssData.getP_IF());
@@ -781,7 +881,7 @@ public class GnssConstellation   {
                                     galileoSatellite.setD5(epochgalileo_observedSatellites.get(j).getDoppler());
                                     positioningData.galileoSatelliteList.add(galileoSatellite);
 
-                                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                    GNSSData gnssData=new GNSSData();
                                     gnssData.setPrn(prn);
                                     gnssData.setP_IF(epochgps_observedSatellites.get(i).getpseudorange(),epochgps_observedSatellites.get(j).getpseudorange());
                                     gnssData.setpseudorange(gnssData.getP_IF());
@@ -805,7 +905,7 @@ public class GnssConstellation   {
                                     galileoSatellite.setD5(epochgalileo_observedSatellites.get(i).getDoppler());
                                     positioningData.galileoSatelliteList.add(galileoSatellite);
 
-                                    PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                    GNSSData gnssData=new GNSSData();
                                     gnssData.setPrn(prn);
                                     gnssData.setP_IF(epochgps_observedSatellites.get(j).getpseudorange(),epochgps_observedSatellites.get(i).getpseudorange());
                                     gnssData.setpseudorange(gnssData.getP_IF());
@@ -862,9 +962,9 @@ public class GnssConstellation   {
                 /**
                  * 处理bds卫星,,,bds卫星只有三个频率   B1，L1，L5
                  */
-                ArrayList<PositioningData.GNSSData> B1Data=new ArrayList<>();
-                ArrayList<PositioningData.GNSSData> L1Data=new ArrayList<>();
-                ArrayList<PositioningData.GNSSData> L5Data=new ArrayList<>();
+                ArrayList<GNSSData> B1Data=new ArrayList<>();
+                ArrayList<GNSSData> L1Data=new ArrayList<>();
+                ArrayList<GNSSData> L5Data=new ArrayList<>();
                 ArrayList<String> hasContainedPrn = new ArrayList<>();
                 for(int i=0;i<epochbds_observedSatellites.size();i++){
                     String frequencyLable=epochbds_observedSatellites.get(i).getFrequencyLable();
@@ -954,7 +1054,7 @@ public class GnssConstellation   {
                             {
                                 bdsSatellite.setP_IF();
 
-                                PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                GNSSData gnssData=new GNSSData();
                                 gnssData.setPrn(prn);
                                 gnssData.setpseudorange(bdsSatellite.getP_IF());
                                 positioningData.doubleFreeDatahash.put(prn,gnssData);
@@ -990,7 +1090,7 @@ public class GnssConstellation   {
                             {
                                 bdsSatellite.setP_IF();
 
-                                PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                GNSSData gnssData=new GNSSData();
                                 gnssData.setPrn(prn);
                                 gnssData.setpseudorange(bdsSatellite.getP_IF());
                                 positioningData.doubleFreeDatahash.put(prn,gnssData);
@@ -1026,7 +1126,7 @@ public class GnssConstellation   {
                             {
                                 bdsSatellite.setP_IF();
 
-                                PositioningData.GNSSData gnssData = positioningData.new GNSSData();
+                                GNSSData gnssData=new GNSSData();
                                 gnssData.setPrn(prn);
                                 gnssData.setpseudorange(bdsSatellite.getP_IF());
                                 positioningData.doubleFreeDatahash.put(prn,gnssData);
@@ -1119,7 +1219,7 @@ public class GnssConstellation   {
     public void calculateSatPosition(GNSSEphemericsNtrip gpsEphemerisNtrip, Coordinates position) {
 
         // Make a list to hold the satellites that are to be excluded based on elevation/CN0 masking criteria
-        List<PositioningData.GNSSData> excludedSatellites = new ArrayList<>();
+        List<GNSSData> excludedSatellites = new ArrayList<>();
         positioningData.computDataList.clear();
         synchronized (this) {
             //System.out.println("calculateSatPosition  此历元卫星数：" + observedSatellites.size());
@@ -1129,7 +1229,7 @@ public class GnssConstellation   {
             Coordinates rxPos = Coordinates.globalXYZInstance(position.getX(), position.getY(), position.getZ());
 
             System.out.println("calculateSatPosition   接收机近似位置：" + position.getX() + "," + position.getY() + "," + position.getZ());
-            for (PositioningData.GNSSData gnssData: positioningData.gnssDataArrayList) {
+            for (GNSSData gnssData: positioningData.gnssDataArrayList) {
                 // Computation of the GPS satellite coordinates in ECEF frame
 
                 // Determine the current GPS week number
@@ -1154,8 +1254,7 @@ public class GnssConstellation   {
 
                 if (sp == null) {
                     excludedSatellites.add(gnssData);
-                    //GnssCoreService.notifyUser("Failed getting ephemeris data!", Snackbar.LENGTH_SHORT, RNP_NULL_MESSAGE);
-                    //跳出循环
+
                     continue;
                 }
 
@@ -1216,7 +1315,7 @@ public class GnssConstellation   {
             double fullTime = (GNSSConstants.UNIX_GPS_DAYS_DIFF * GNSSConstants.SEC_IN_DAY + gpsWeek * GNSSConstants.DAYS_IN_WEEK * GNSSConstants.SEC_IN_DAY + gpsSow) * 1000L;
 
             long timeRx = (long) (fullTime);
-            for (PositioningData.GNSSData gnssData: positioningData.gnssDataArrayList) {//通过key遍历哈希表
+            for (GNSSData gnssData: positioningData.gnssDataArrayList) {//通过key遍历哈希表
                 if (timeRx!=gnssData.getunixTime()) {//通过时间戳判断历元是否更新
                     String prnAndF=gnssData.getPrnAndF();
                     if(!positioningData.computDatahash.containsKey(prnAndF)){
@@ -1246,11 +1345,9 @@ public class GnssConstellation   {
                 }
             }
             System.out.println("h");
-            //接收机的位置，这里用接收机的位置主要是为了计算对流层延迟
-            Coordinates rxPos = Coordinates.globalXYZInstance(position.getX(), position.getY(), position.getZ());
-            //calculateSatPositionFromFtp(mrinexNavigationM,rxPos);
-            calculateSatPositionFromFtp(mrinexNavigationMnew,rxPos);
 
+            //calculateSatPositionFromFtp(mrinexNavigationMnew,rxPos);
+            calculateSatPositionFromFtp1(mrinexNavigationMnew,position);
             System.out.println("hdada");
 
         }
@@ -1295,7 +1392,7 @@ public class GnssConstellation   {
                     unusedDatahash.put(prnAndF,positioningData.computDatahash.get(prnAndF));
                     continue;
                 }
-
+                positioningData.computDatahash.get(prnAndF).setSp(rnp);
                 positioningData.computDatahash.get(prnAndF).setSATECEF(rnp.getSATECEF());
                 positioningData.computDatahash.get(prnAndF).setsatelliteClockError(rnp.getSatelliteClockError());
                 positioningData.computDatahash.get(prnAndF).setSATspeed(rnp.getSpeed());
@@ -1311,8 +1408,8 @@ public class GnssConstellation   {
 
                 //Add to the exclusion list the satellites that do not pass the masking criteria
                 if (positioningData.computDatahash.get(prnAndF).getRxTopo().getElevation() < MASK_ELEVATION) {
-                    //positioningData.computDatahash.remove(prnAndF);
                     unusedDatahash.put(prnAndF,positioningData.computDatahash.get(prnAndF));
+                    continue;
                 }
 
 
@@ -1342,6 +1439,84 @@ public class GnssConstellation   {
 
         }
     }
+
+
+    public void calculateSatPositionFromFtp1(RinexNavigationGpsNEW rinexNavGps, Coordinates position) {
+        // Make a list to hold the satellites that are to be excluded based on elevation/CN0 masking criteria
+        //根据给定的 RINEX 导航文件 和接收机位置  计算每个观测卫星的位置，并根据仰角掩码标准排除不符合条件的卫星。
+
+
+        synchronized (this) {
+            positioningData.computDataList.clear();
+
+            for(int i=0;i <positioningData.gnssDataArrayListtest.size();i++)
+            {
+                // Computation of the GPS satellite coordinates in ECEF frame
+                //计算GPS卫星在ECEF坐标系中的坐标 地心地固系
+
+                //观测数据的时间
+                // Determine the current GPS week number
+                int gpsWeek = (int) (weekNumberNanos / Constants.NUMBER_NANO_SECONDS_PER_WEEK);
+
+                // Time of signal reception in GPS Seconds of the Week (SoW)
+                double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
+                Time tGPS = new Time(gpsWeek, gpsSow);
+
+                // Convert the time of reception from GPS SoW to UNIX time (milliseconds)
+                long timeRx = tGPS.getMsec();//UNIX time (milliseconds)
+//                SatellitePosition rnp = rinexNavGps.getSatPositionAndVelocities(
+//                        timeRx,//观测数据的时间
+//                        positioningData.gnssDataArrayListtest.get(i).getpseudorange(),
+//                        positioningData.gnssDataArrayListtest.get(i).getSATID(),
+//                        'G',
+//                        0.0
+//                );
+                SatellitePosition rnp =rinexNavGps.getRnp().getSatPositionAndVelocities(
+                        timeRx,//观测数据的时间
+                        positioningData.gnssDataArrayListtest.get(i).getpseudorange(),
+                        positioningData.gnssDataArrayListtest.get(i).getSATID(),
+                        'G',
+                        0.0
+                );
+
+                if (rnp == null) {
+                    continue;
+                }
+                positioningData.gnssDataArrayListtest.get(i).setSp(rnp);
+
+                //设置卫星相对于用户的方位角和仰角，并根据这些角度来设置伪距测量方差
+                positioningData.gnssDataArrayListtest.get(i).setRxTopo(
+                        new TopocentricCoordinates(
+                                position,
+                                positioningData.gnssDataArrayListtest.get(i).getSp()));
+
+                //Add to the exclusion list the satellites that do not pass the masking criteria
+                if (positioningData.gnssDataArrayListtest.get(i).getRxTopo().getElevation() < MASK_ELEVATION) {
+                    continue;
+                }
+                double accumulatedCorrection = 0;
+                //计算累计的误差，包括对流层延迟和电离层延迟
+                //遍历计算三种误差并累加
+                //IonoCorrection ionoCorrection=new
+
+                TropoCorrection tropoCorrection=new TropoCorrection();
+                tropoCorrection.calculateCorrection(new Time(timeRx), position, rnp);
+                accumulatedCorrection+=tropoCorrection.getCorrection();
+
+                ShapiroCorrection shapiroCorrection=new ShapiroCorrection();
+                shapiroCorrection.calculateCorrection(new Time(timeRx), position, rnp);
+                accumulatedCorrection+=shapiroCorrection.getCorrection();
+
+
+                positioningData.gnssDataArrayListtest.get(i).setAccumulatedCorrection(accumulatedCorrection);
+
+                positioningData.computDataList.add(positioningData.gnssDataArrayListtest.get(i));
+            }
+            System.out.println("here");
+
+        }
+    }
+
 
     private void sendUiUpdateMessage(String key, String value) {
         Message msg = uiHandler.obtainMessage();

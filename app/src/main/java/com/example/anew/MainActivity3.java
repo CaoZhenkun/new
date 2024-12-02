@@ -61,7 +61,6 @@ import java.net.URL;
 
 
 public class MainActivity3 extends AppCompatActivity  {
-    private static final String ACTION_LOCATION_UPDATE = "com.example.LOCATION_UPDATE";
     private static final String ACTION_SPP_UPDATE="com.example.SPP_UPDATE";
     //主界面控件共用部分
 
@@ -91,6 +90,7 @@ public class MainActivity3 extends AppCompatActivity  {
     private TextView textViewTiaoshi;
     private TextView textViewTMap;
     private TextView textViewResult;
+    private TextView textViewLocation;
     private TextView textNum;
     //是否开始记录Rinex文件
     private boolean isRecord;
@@ -116,8 +116,9 @@ public class MainActivity3 extends AppCompatActivity  {
 //
     private Coordinates pose;//获取的手机PGS芯片自带位置，用于平差计算
     private WeightedLeastSquares mWeightedLeastSquares;//最小二乘
+    private WeightedLeastSquares1 mWeightedLeastSquares1;//最小二乘
 
-
+    boolean poseinitialized=false;
 
 
 
@@ -162,6 +163,7 @@ public class MainActivity3 extends AppCompatActivity  {
         textViewSizeGlo1=findViewById(R.id.sizeglo1);
         textViewsizeQzss1=findViewById(R.id.sizeqzss1);
         textViewResult=findViewById(R.id.result);
+        textViewLocation=findViewById(R.id.location);
         textNum=findViewById(R.id.number);
         textViewTMap=findViewById(R.id.map);
         textViewTMap.setOnClickListener(new View.OnClickListener() {
@@ -225,10 +227,10 @@ public class MainActivity3 extends AppCompatActivity  {
         sharedPreferences=getSharedPreferences(Constants.SPP_SETTING,0);
 
         //平差类初始化
-        mWeightedLeastSquares = new WeightedLeastSquares();
+        //mWeightedLeastSquares = new WeightedLeastSquares();
+        mWeightedLeastSquares1=new WeightedLeastSquares1();
 
-        //卫星数据处理类初始化
-       //rawGPSDataProcessing = new RawGPSDataProcessing(positioningData);
+
         // 从 SharedPreferences 中读取参数
         int param1 = sharedPreferences.getInt(Constants.KEY_GPS_SYSTEM, 1); // 默认值为 1
         int param2 = sharedPreferences.getInt(Constants.KEY_GAL_SYSTEM, 0); // 默认值为 0
@@ -338,22 +340,21 @@ public class MainActivity3 extends AppCompatActivity  {
 
             GnssClock clock = eventArgs.getClock();
             gpsTime =new GpsTime(clock);
+            System.out.println("j");
+            //mGnssConstellation.updateMeasurements(eventArgs);
+            mGnssConstellation.updateMeasurements1(eventArgs);
 
-            mGnssConstellation.updateMeasurements(eventArgs);
-
-            textViewSizeAll.setText("历元观测数目"+ positioningData.gnssDataArrayList.size());
-            textViewSizeGps.setText("GPS"+ positioningData.gpsDataList.size());
-            textViewSizeGal.setText("GAL"+ positioningData.galileoDataList.size());
-            textViewSizeGlo.setText("GLO"+ positioningData.glonassDataList.size());
-            textViewSizeBds.setText("BDS"+ positioningData.bdsDataList.size());
-            textViewsizeQzss.setText("Qzss"+ positioningData.qzssDataList.size());
-
-
-            textViewSizeGps1.setText("GPS"+ positioningData.gpsSatelliteList.size());
-            textViewSizeGal1.setText("GAL"+ positioningData.galileoSatelliteList.size());
-            textViewSizeGlo1.setText("GLO"+ positioningData.glonassSatelliteList.size());
-            textViewSizeBds1.setText("BDS"+ positioningData.bdsSatelliteList.size());
-            textViewsizeQzss1.setText("Qzss"+ positioningData.qzssSatelliteList.size());
+//            textViewSizeAll.setText("历元观测数目"+ positioningData.gnssDataArrayList.size());
+//            textViewSizeGps.setText("GPS"+ positioningData.gpsDataList.size());
+//            textViewSizeGal.setText("GAL"+ positioningData.galileoDataList.size());
+//            textViewSizeGlo.setText("GLO"+ positioningData.glonassDataList.size());
+//            textViewSizeBds.setText("BDS"+ positioningData.bdsDataList.size());
+//            textViewsizeQzss.setText("Qzss"+ positioningData.qzssDataList.size());
+//            textViewSizeGps1.setText("GPS"+ positioningData.gpsSatelliteList.size());
+//            textViewSizeGal1.setText("GAL"+ positioningData.galileoSatelliteList.size());
+//            textViewSizeGlo1.setText("GLO"+ positioningData.glonassSatelliteList.size());
+//            textViewSizeBds1.setText("BDS"+ positioningData.bdsSatelliteList.size());
+//            textViewsizeQzss1.setText("Qzss"+ positioningData.qzssSatelliteList.size());
 
 
 
@@ -366,26 +367,25 @@ public class MainActivity3 extends AppCompatActivity  {
             }
 
 
-            //计算卫星位置/平差计算
-            //mGnssConstellation.calculateSatPosition(mGNSSEphemericsNtrip,pose);
 
             if(pose!=null){
                 mGnssConstellation.calculateSatPosition(pose);
-                textNum.setText("数目:"+positioningData.computDatahash.size()+"\n"+"数目:"+positioningData.computDataList.size());
-            }
-            if (positioningData.computDatahash.size() >= 5) {
-                Coordinates pSPP = mWeightedLeastSquares.calculatePose(positioningData);
-                textViewResult.setText(String.format("X: %.6f  Y: %.6f  Z: %.2f", pSPP.getX(), pSPP.getY(), pSPP.getZ()));
-                // 创建 Intent 并发送广播
-                LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(MainActivity3.this);
-                Intent intent = new Intent(ACTION_SPP_UPDATE);
-                intent.putExtra("latitude", location.getLatitude());
-                intent.putExtra("longitude", location.getLongitude());
-                localBroadcastManager.sendBroadcast(intent);
-                Log.d("myBroad", "发生广播");
-            }
+                textNum.setText("数目:"+positioningData.gnssDataArrayListtest.size()+"\n"+"数目:"+positioningData.computDataList.size());
 
 
+                if (positioningData.computDataList.size() >= 5) {
+                    pose=mWeightedLeastSquares1.calculatePose(positioningData,pose);
+                    textViewResult.setText(String.format("X: %.6f  Y: %.6f  Z: %.2f", pose.getX(), pose.getY(), pose.getZ()));
+
+                    // 创建 Intent 并发送广播
+                    LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(MainActivity3.this);
+                    Intent intent = new Intent(ACTION_SPP_UPDATE);
+                    intent.putExtra("latitude", pose.getGeodeticLatitude());
+                    intent.putExtra("longitude", pose.getGeodeticLongitude());
+                    localBroadcastManager.sendBroadcast(intent);
+                    Log.d("myBroad", "发生广播");
+                }
+            }
         }
 
     };
@@ -417,33 +417,12 @@ public class MainActivity3 extends AppCompatActivity  {
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location mlocation) {
-            if (mlocation != null) {
-
+            if (mlocation != null && !poseinitialized) {
                 location = mlocation;
-
-                // 创建 Intent 并发送广播
-//                Intent intent = new Intent(ACTION_LOCATION_UPDATE);
-//                intent.putExtra("latitude", location.getLatitude());
-//                intent.putExtra("longitude", location.getLongitude());
-//                sendBroadcast(intent);
-
-
-                LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(MainActivity3.this);
-                Intent intent = new Intent(ACTION_LOCATION_UPDATE);
-                intent.putExtra("latitude", location.getLatitude());
-                intent.putExtra("longitude", location.getLongitude());
-                localBroadcastManager.sendBroadcast(intent);
-
-                //坐标转换
                 xyz = Coordinates.WGS84LLAtoXYZ(location.getLatitude(), location.getLongitude(), location.getAltitude());
-                try {
-                    //用于平差计算的接收机近似位置
-                    pose = Coordinates.globalGeodInstance(location.getLatitude(), location.getLongitude(), location.getAltitude());
-
-                } catch (Exception e) {
-
-                }
-
+                pose = Coordinates.globalGeodInstance(location.getLatitude(), location.getLongitude(), location.getAltitude());
+                textViewLocation.setText(String.format("X: %.6f  Y: %.6f  Z: %.2f", pose.getX(), pose.getY(), pose.getZ()));
+                poseinitialized = true;
             }
         }
 
@@ -464,6 +443,7 @@ public class MainActivity3 extends AppCompatActivity  {
     {
         return sharedPreferences;
     }
+
     private void startRecordRinex() {
         rinex = new Rinex(getApplicationContext(), sharedPreferences.getInt(Constants.KEY_RINEX_VER, Constants.DEF_RINEX_VER));
         rinex.writeHeader(new RinexHeader(

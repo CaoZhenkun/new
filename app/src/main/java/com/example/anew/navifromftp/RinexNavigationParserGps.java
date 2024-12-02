@@ -1210,7 +1210,7 @@ public class RinexNavigationParserGps extends EphemerisSystem implements Navigat
         }
 
         if (eph.equals(EphGps.UnhealthyEph))
-            return SatellitePosition.UnhealthySat;
+            return null;
 
         //			char satType = eph.getSatType();
 

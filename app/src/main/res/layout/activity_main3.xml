@@ -48,14 +48,26 @@
 
     <TextView
         android:id="@+id/tiaoshi"
-        android:layout_width="389dp"
-        android:layout_height="73dp"
-        android:layout_marginTop="340dp"
+        android:layout_width="277dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="324dp"
         android:gravity="center"
         android:text="调试信息"
         android:textSize="10sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.392"
+        app:layout_constraintHorizontal_bias="0.373"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/location"
+        android:layout_width="331dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="348dp"
+        android:gravity="center"
+        android:text="起始位置"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

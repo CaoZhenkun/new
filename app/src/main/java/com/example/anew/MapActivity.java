@@ -32,7 +32,6 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 
 public class MapActivity extends AppCompatActivity {
 
-    private static final String ACTION_LOCATION_UPDATE = "com.example.LOCATION_UPDATE";
     private static final String ACTION_SPP_UPDATE="com.example.SPP_UPDATE";
 
     private Marker mMarker = null;
@@ -80,13 +79,6 @@ public class MapActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             Log.d("myBroad", "接受广播");
 
-            // 处理 ACTION_LOCATION_UPDATE 广播
-//            if (ACTION_LOCATION_UPDATE.equals(intent.getAction())) {
-//                double latitude = intent.getDoubleExtra("latitude", 0);
-//                double longitude = intent.getDoubleExtra("longitude", 0);
-//                GeoPoint geoPoint = new GeoPoint(latitude, longitude);
-//                changeMapCenter(geoPoint);
-//            }
 
             // 处理 ACTION_SPP_UPDATE 广播
             if (ACTION_SPP_UPDATE.equals(intent.getAction())) {
@@ -105,11 +97,6 @@ public class MapActivity extends AppCompatActivity {
         checkPermission();
 
          //注册广播接收器
-//        IntentFilter filter = new IntentFilter(ACTION_LOCATION_UPDATE);
-//        //IntentFilter filter = new IntentFilter(ACTION_SPP_UPDATE);
-//        registerReceiver(locationUpdateReceiver, filter, Context.RECEIVER_EXPORTED);
-
-        //LocalBroadcastManager.getInstance(this).registerReceiver(locationUpdateReceiver, new IntentFilter(ACTION_LOCATION_UPDATE));
         LocalBroadcastManager.getInstance(this).registerReceiver(locationUpdateReceiver, new IntentFilter(ACTION_SPP_UPDATE));
     }
 
@@ -117,7 +104,6 @@ public class MapActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         // 注销广播接收器
-        //unregisterReceiver(locationUpdateReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(locationUpdateReceiver);
     }
 

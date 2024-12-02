@@ -97,9 +97,9 @@ public class WeightedLeastSquares {
 
 
                 // Assign the computed SV coordinates into a matrix
-                satPosMat.set(ii, 0, positioningData.computDataList.get(ii).getSATECEF().get(0,0));
-                satPosMat.set(ii, 1, positioningData.computDataList.get(ii).getSATECEF().get(1,0));
-                satPosMat.set(ii, 2, positioningData.computDataList.get(ii).getSATECEF().get(2,0));
+                satPosMat.set(ii, 0, positioningData.computDataList.get(ii).getSp().getX());
+                satPosMat.set(ii, 1, positioningData.computDataList.get(ii).getSp().getY());
+                satPosMat.set(ii, 2, positioningData.computDataList.get(ii).getSp().getZ());
 
 
                 // Compute the elevation and azimuth angles for each satellite

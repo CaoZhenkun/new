@@ -15,7 +15,6 @@ import android.util.Log;
 import android.view.View;
 
 import com.example.anew.R;
-import com.example.anew.Satellite;
 import com.example.anew.util.Utils;
 
 import java.util.HashMap;

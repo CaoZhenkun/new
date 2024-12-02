@@ -96,6 +96,14 @@ public abstract class EphemerisSystem {
             SatellitePosition sp = new SatellitePosition(unixTime, satID, satType, x1 * Math.cos(Omega) - y1 * Math.cos(ik) * Math.sin(Omega),
                     x1 * Math.sin(Omega) + y1 * Math.cos(ik) * Math.cos(Omega),
                     y1 * Math.sin(ik));
+            //*******************************************************************//
+            //11.26加
+            SimpleMatrix SATECEF = new SimpleMatrix(3, 1);
+            SATECEF.set(0, 0, x1 * Math.cos(Omega) - y1 * Math.cos(ik) * Math.sin(Omega));
+            SATECEF.set(1, 0, x1 * Math.sin(Omega) + y1 * Math.cos(ik) * Math.cos(Omega));
+            SATECEF.set(2, 0, y1 * Math.sin(ik));
+            sp.setSATECEF(SATECEF);
+            //*******************************************************************//
             sp.setSatelliteClockError(satelliteClockError);
 
             Log.d(Tag, "时间戳："+unixTime+"gpstime:"+(new Time(unixTime).getGpsTime())+"卫星："+sp.getSatType()+sp.getSatID()+"坐标："+sp.getX()+"   "+sp.getY()+"   "+sp.getZ());
@@ -103,7 +111,7 @@ public abstract class EphemerisSystem {
             // 信号传播时间引起的地球自转修正
             SimpleMatrix R = computeEarthRotationCorrection(unixTime, receiverClockError, tGPS);
             sp.setSMMultXYZ(R);
-
+            sp.setSATECEF(R.mult(SATECEF));
             ///////////////////////////
             // compute satellite speeds
             // The technical paper which describes the bc_velo.c program is published in
