@@ -321,21 +321,21 @@ public class MainActivity3 extends AppCompatActivity  {
 
             GnssClock clock = eventArgs.getClock();
             gpsTime =new GpsTime(clock);
-            System.out.println("j");
+
             mGnssConstellation.updateMeasurements(eventArgs);
             //mGnssConstellation.updateMeasurements1(eventArgs);
 
-//            textViewSizeAll.setText("历元观测数目"+ positioningData.gnssDataArrayList.size());
-//            textViewSizeGps.setText("GPS"+ positioningData.gpsDataList.size());
-//            textViewSizeGal.setText("GAL"+ positioningData.galileoDataList.size());
-//            textViewSizeGlo.setText("GLO"+ positioningData.glonassDataList.size());
-//            textViewSizeBds.setText("BDS"+ positioningData.bdsDataList.size());
-//            textViewsizeQzss.setText("Qzss"+ positioningData.qzssDataList.size());
-//            textViewSizeGps1.setText("GPS"+ positioningData.gpsSatelliteList.size());
-//            textViewSizeGal1.setText("GAL"+ positioningData.galileoSatelliteList.size());
-//            textViewSizeGlo1.setText("GLO"+ positioningData.glonassSatelliteList.size());
-//            textViewSizeBds1.setText("BDS"+ positioningData.bdsSatelliteList.size());
-//            textViewsizeQzss1.setText("Qzss"+ positioningData.qzssSatelliteList.size());
+            textViewSizeAll.setText("历元观测数目"+ mGnssConstellation.gnssDataList.size());
+            textViewSizeGps.setText("GPS"+ positioningData.gpsDataList.size());
+            textViewSizeGal.setText("GAL"+ positioningData.galileoDataList.size());
+            textViewSizeGlo.setText("GLO"+ positioningData.glonassDataList.size());
+            textViewSizeBds.setText("BDS"+ positioningData.bdsDataList.size());
+            textViewsizeQzss.setText("Qzss"+ positioningData.qzssDataList.size());
+            textViewSizeGps1.setText("GPS"+ positioningData.gpsSatelliteList.size());
+            textViewSizeGal1.setText("GAL"+ positioningData.galileoSatelliteList.size());
+            textViewSizeGlo1.setText("GLO"+ positioningData.glonassSatelliteList.size());
+            textViewSizeBds1.setText("BDS"+ positioningData.bdsSatelliteList.size());
+            textViewsizeQzss1.setText("Qzss"+ positioningData.qzssSatelliteList.size());
 
 
 
@@ -351,7 +351,7 @@ public class MainActivity3 extends AppCompatActivity  {
 
             if(pose!=null){
                 mGnssConstellation.calculateSatPosition(pose);
-                textNum.setText("数目:"+mGnssConstellation.testList2.size()+"\n"+"数目:"+positioningData.computDataList.size());
+                textNum.setText("观测数目:"+mGnssConstellation.gnssDataList.size()+"\n"+"可使用数目:"+mGnssConstellation.testList2.size());
 
 
                 //if (positioningData.computDataList.size() >= 5) {

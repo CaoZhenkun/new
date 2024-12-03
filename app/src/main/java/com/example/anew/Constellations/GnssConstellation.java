@@ -55,7 +55,7 @@ public class GnssConstellation   {
     protected double tRxGPS;
     protected double weekNumberNanos;
     private Handler uiHandler;
-    public List<GNSSData> testList=new ArrayList<>();
+    public List<GNSSData> gnssDataList=new ArrayList<>();
     public List<GNSSData> testList2=new ArrayList<>();
     public static boolean approximateEqual(double a, double b, double eps) {
         return Math.abs(a - b) < eps;
@@ -90,36 +90,27 @@ public class GnssConstellation   {
 
     }
 
-//    public void onDataReceived(byte[] data) {//接收到NTRIP协议的数据后对数据进行解码
-//        synchronized (this) {
-//            int type = (int) getbitu(data, 0, 12);
-//            Log.d("RTCM文件类型", "-" + type);
-//            switch (type) {
-//                case 1019://GPS
-//                    decodeGpsEph(data);
-//                case 1264://电离层
-//                    decodeionodata(data);
-//                case 1057://SSR改正
-//                    decodeSSR1(data);
-//                case 1058://SSR改正
-//                    decodeSSR2(data);
-//                case 1059://SSR改正
-//                    decodeSSR3(data);
-//            }
-//        }
-//    }
+
 public void updateMeasurements(GnssMeasurementsEvent event) {
 
     synchronized (this) {
-        //******************************************下面中文注释是AI生成，不可都信***************************************//
-        //初始化变量
-        testList.clear();
-        //获取 GNSS 时钟信息
-        GnssClock gnssClock = event.getClock();//获取 GNSS 时钟信息Gets the GNSS receiver clock information associated with the measurements for the current event.
-        long TimeNanos = gnssClock.getTimeNanos();//获取当前时间的纳秒数
-        //timeRefMsec = new Time(System.currentTimeMillis());//获取当前时间的毫秒数
-        double BiasNanos = gnssClock.getBiasNanos();//获取时钟偏差的纳秒数
-        double gpsTime, pseudorange;
+
+        gnssDataList.clear();
+
+        positioningData.gnssDataList.clear();
+        positioningData.gpsDataList.clear();
+        positioningData.galileoDataList.clear();
+        positioningData.bdsDataList.clear();
+        positioningData.glonassDataList.clear();
+        positioningData.qzssDataList.clear();
+
+
+        GnssClock gnssClock = event.getClock();
+        positioningData.setEpochTime(new GpsTime(gnssClock));//历元的GPS时间
+        long TimeNanos = gnssClock.getTimeNanos();
+
+        double BiasNanos = gnssClock.getBiasNanos();
+
 
         // Use only the first instance of the FullBiasNanos (as done in gps-measurement-tools)
         //仅使用 FullBiasNanos 的第一个实例（就像在 gps-measurement-tools 中所做的那样）
@@ -135,72 +126,126 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
 
 
         for (GnssMeasurement measurement : event.getMeasurements()) {
-
-            if (measurement.getConstellationType() != GnssStatus.CONSTELLATION_GPS)
-                continue;
-
-            if (measurement.hasCarrierFrequencyHz())
-                if (!approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE))
-                    continue;
-
+            int constellationType = measurement.getConstellationType();
+            char type = ' ';
+            switch (constellationType) {
+                case GnssStatus.CONSTELLATION_GPS:
+                    type = 'G';
+                    break;
+                case GnssStatus.CONSTELLATION_GALILEO:
+                    type = 'E';
+                    break;
+                case GnssStatus.CONSTELLATION_GLONASS:
+                    type = 'R';
+                    break;
+                case GnssStatus.CONSTELLATION_BEIDOU:
+                    type = 'C';
+                    break;
+                case GnssStatus.CONSTELLATION_QZSS:
+                    type = 'J';
+                    break;
+            }
             long ReceivedSvTimeNanos = measurement.getReceivedSvTimeNanos();
             double TimeOffsetNanos = measurement.getTimeOffsetNanos();
+            weekNumberNanos = Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK) * Constants.NUMBER_NANO_SECONDS_PER_WEEK;
+            tRxGPS = TimeNanos+ TimeOffsetNanos - (FullBiasNanos + BiasNanos);//手机硬件时间减去与GPS时间的偏差，加偏差修正量,得到GPS时间
 
-            gpsTime =
-                    TimeNanos - (FullBiasNanos + BiasNanos); // TODO intersystem bias?
+            double tRxNanos=tRxGPS-weekNumberNanos;//GPS周内秒
 
 
-            tRxGPS =
-                    gpsTime + TimeOffsetNanos;
 
-            weekNumberNanos =
-                    Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK)
-                            * Constants.NUMBER_NANO_SECONDS_PER_WEEK;
+            if(type=='E'&& measurement.getState()==GnssMeasurement.STATE_GAL_E1C_2ND_CODE_LOCK) {
+                tRxNanos=tRxGPS% Constants.NumberNanoSeconds100Milli;//Galileo日内秒 for Galileo with E1C 2nd code status
+            }
 
-            //计算伪距
-            pseudorange =
-                    (tRxGPS - weekNumberNanos - ReceivedSvTimeNanos) / 1.0E9
-                            * Constants.SPEED_OF_LIGHT;
 
-            // TODO Check that the measurement have a valid state such that valid pseudoranges are used in the PVT algorithm
+            double tRxSeconds = tRxNanos * 1e-9;
+            double tTxSeconds = ReceivedSvTimeNanos * 1e-9;
 
-                /*
+            if ((type=='R')) {
+                double tRxSeconds_GLO = tRxSeconds % 86400;
+                double tTxSeconds_GLO = tTxSeconds - 10800 + leapseconds;
+                if (tTxSeconds_GLO < 0) {
+                    tTxSeconds_GLO = tTxSeconds_GLO + 86400;
+                }
+                tRxSeconds = tRxSeconds_GLO;
+                tTxSeconds = tTxSeconds_GLO;
+            }
+            if (type=='C') {
 
-                According to https://developer.android.com/ the GnssMeasurements States required
-                for GPS valid pseudoranges are:
+                double tRxSeconds_BDS = tRxSeconds;
+                double tTxSeconds_BDS = tTxSeconds +14;
+                if (tTxSeconds_BDS > 604800) {
+                    tTxSeconds_BDS = tTxSeconds_BDS - 604800;
+                }
+                tRxSeconds = tRxSeconds_BDS;
+                tTxSeconds = tTxSeconds_BDS;
+            }
 
-                int STATE_CODE_LOCK         = 1      (1 << 0)
-                int int STATE_TOW_DECODED   = 8      (1 << 3)
+            double prSeconds = tRxSeconds - tTxSeconds;
+            double pseudorange=prSeconds*Constants.SPEED_OF_LIGHT;
 
-                */
-            //检查测量状态，确保测量状态满足条件（如 STATE_CODE_LOCK 和 STATE_TOW_DECODED）
             int measState = measurement.getState();
-
-            // Bitwise AND to identify the states
             boolean codeLock = (measState & GnssMeasurement.STATE_CODE_LOCK) != 0;//检查是否已经码锁定（STATE_CODE_LOCK）
             boolean towDecoded = (measState & GnssMeasurement.STATE_TOW_DECODED) != 0;// 检查是否已经解码时间（STATE_TOW_DECODED）
             boolean towKnown = false;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // 检查当前设备的 API 级别是否大于或等于 Android O（API 级别 26）
                 towKnown = (measState & GnssMeasurement.STATE_TOW_KNOWN) != 0;
                 // 如果设备的 API 级别大于或等于 Android O，检查是否已知时间（STATE_TOW_KNOWN）
                 //STATE_TOW_KNOWN:这个GNSS测量的跟踪状态已经知道了周时间（Time-of-Week），可能没有通过空中解码，但已经通过其他来源确定。
             }
-            //如果测量状态满足条件，则创建 SatelliteParameters 对象并添加到 observedSatellites 列表中。
-            //否则，创建 SatelliteParameters 对象并添加到 unusedSatellites 列表中，并增加 visibleButNotUsed 计数。
             if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) { // && towUncertainty
-                //存储卫星参数的对象
-
                 GNSSData gnssData=new GNSSData();
+                gnssData.setSATstate(1);
+                gnssData.setGnssType(type);
                 gnssData.setSATID(measurement.getSvid());
                 gnssData.setpseudorange(pseudorange);
-                gnssData.setGnssType('G');
-                testList.add(gnssData);
 
-            } else {
+                if(measurement.hasCarrierFrequencyHz()){
+                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+                        gnssData.setFrequency(L1_FREQUENCY);
+                        gnssData.setFrequencyLable("L1");
+                        gnssData.setPrn(addprn(type,gnssData.getSATID()));
+                        gnssData.setPrnAndF(addprn(type,gnssData.getSATID(), gnssData.getFrequencyLable()));
+                    }
+                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+                        gnssData.setFrequency(L5_FREQUENCY);
+                        gnssData.setFrequencyLable("L5");
+                        gnssData.setPrn(addprn(type,gnssData.getSATID()));
+                        gnssData.setPrnAndF(addprn(type,gnssData.getSATID(), gnssData.getFrequencyLable()));
+                    }
+                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), B1I_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+                        gnssData.setFrequency(B1I_FREQUENCY);
+                        gnssData.setFrequencyLable("B1");
+                        gnssData.setPrn(addprn(type,gnssData.getSATID()));
+                        gnssData.setPrnAndF(addprn(type,gnssData.getSATID(), gnssData.getFrequencyLable()));
+                    }
+                    double ADR = measurement.getAccumulatedDeltaRangeMeters();
+                    double λ = 2.99792458e8 / measurement.getCarrierFrequencyHz();
+                    double phase = ADR / λ;
+                    gnssData.setphase(phase);//存储载波
+                    gnssData.setDoppler(measurement.getPseudorangeRateMetersPerSecond() / λ);//存储多普勒值
+                }
+                gnssData.setSnr(measurement.getCn0DbHz());//存储获取载噪比
 
+
+                if(type=='G') {
+                    positioningData.gpsDataList.add(gnssData);
+                } else if (type=='E') {
+                    positioningData.galileoDataList.add(gnssData);
+                } else if (type=='C') {
+                    positioningData.bdsDataList.add(gnssData);
+                } else if (type=='R') {
+                    positioningData.glonassDataList.add(gnssData);
+                } else if (type=='J') {
+                    positioningData.qzssDataList.add(gnssData);
+                }
+                gnssDataList.add(gnssData);
             }
         }
+        distributeData();
+        System.out.println("e");
     }
 }
 //    public void updateMeasurements(GnssMeasurementsEvent event) {
@@ -1222,7 +1267,7 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
             testList2.clear();
 
 
-            for (GNSSData gnssData : testList) {
+            for (GNSSData gnssData : gnssDataList) {
                 // Computation of the GPS satellite coordinates in ECEF frame
                 //计算GPS卫星在ECEF坐标系中的坐标 地心地固系
 

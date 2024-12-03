@@ -25,8 +25,7 @@ public class PositioningData {
     //GNSS成员
     public Hashtable<Integer,EphData> ephDatahash=new Hashtable<Integer, EphData>(); //用于存储卫星星历数据的哈希表
     //public Hashtable<Integer,GNSSData> gnssDatahash=new Hashtable<Integer, GNSSData>(); //用于存储手机GNSS原始数据的哈希表
-    public ArrayList<GNSSData> gnssDataArrayList= new ArrayList<>();//用于存储手机GNSS原始数据的数组
-    public ArrayList<GNSSData> gnssDataArrayListtest= new ArrayList<>();//用于存储手机GNSS原始数据的数组
+    public ArrayList<GNSSData> gnssDataList= new ArrayList<>();//用于存储手机GNSS原始数据的数组
 
     private GpsTime epochTime;//历元时间
     public void setEpochTime(GpsTime epochTime) {this.epochTime = epochTime;}
