@@ -22,6 +22,7 @@ package com.example.anew.navifromftp;
 import android.util.Log;
 
 import com.example.anew.Constellations.Time;
+import com.example.anew.coord.SatellitePosition;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -41,14 +42,31 @@ import java.util.zip.GZIPInputStream;
  * <p>
  * This class retrieve RINEX file on-demand from known server structures
  */
-public class RinexNavigationGpsNEW implements NavigationIono {
+public class RinexNavigationGps  implements NavigationIono {
+
+    public final static String GARNER_NAVIGATION_AUTO = "ftp://garner.ucsd.edu/pub/nav/${yyyy}/${ddd}/auto${ddd}0.${yy}n.Z";
+    public final static String IGN_MULTI_NAVIGATION_DAILY = "ftp://igs.ign.fr/pub/igs/data/campaign/mgex/daily/rinex3/${yyyy}/${ddd}/brdm${ddd}0.${yy}p.Z";
+    public final static String GARNER_NAVIGATION_ZIM2 = "ftp://garner.ucsd.edu/pub/nav/${yyyy}/${ddd}/zim2${ddd}0.${yy}n.Z";
+    public final static String IGN_NAVIGATION_HOURLY_ZIM2 = "ftp://igs.ensg.ign.fr/pub/igs/data/hourly/${yyyy}/${ddd}/zim2${ddd}${h}.${yy}n.Z";
+    public final static String NASA_NAVIGATION_DAILY = "ftp://cddis.gsfc.nasa.gov/pub/gps/data/daily/${yyyy}/${ddd}/${yy}n/brdc${ddd}0.${yy}n.Z";
+    public final static String NASA_NAVIGATION_HOURLY = "ftp://cddis.gsfc.nasa.gov/pub/gps/data/hourly/${yyyy}/${ddd}/hour${ddd}0.${yy}n.Z";
+    public final static String GARNER_NAVIGATION_AUTO_HTTP = "http://garner.ucsd.edu/pub/rinex/${yyyy}/${ddd}/auto${ddd}0.${yy}n.Z"; // ex http://garner.ucsd.edu/pub/rinex/2016/034/auto0340.16n.Z
+
+    public final static String BKG_HOURLY_SUPER_SEVER = "ftp://igs.bkg.bund.de/IGS/BRDC/${yyyy}/${ddd}/brdc${ddd}0.${yy}n.Z";
+
 
     private final static String TAG = "RinexNavigationGps";
+
+
     /**
      * cache for negative answers
      */
     private Hashtable<String, Date> negativeChache = new Hashtable<String, Date>();
 
+
+    //这个是url的模板
+    private String urltemplate;
+    private String url;
     /**
      * Folder containing downloaded files
      */
@@ -56,21 +74,30 @@ public class RinexNavigationGpsNEW implements NavigationIono {
 
     private RinexNavigationParserGps rnp = null;//用于解析导航电文的对象
     //private RinexNavigationParserGpsGLONASS rnp=null;
-    public RinexNavigationParserGps getRnp()
-    {
-        return rnp;
-    }
 
+
+    public String getUrl() {
+        return url;
+    }
 
 
     public void getFromFTP(String urltemplate) throws IOException {
 
 
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+
         Calendar c = Calendar.getInstance();
+
+
         Time t = new Time(c.getTimeInMillis());
-        String url = t.formatTemplate(urltemplate);
+
+        //String url = t.formatTemplate(urltemplate);
+        String url = t.formatTemplateM(urltemplate);
+
+
+        //RinexNavigationParserGps rnp = null;
         RinexNavigationParserGps rnp=null;
+        String origurl = url;
 
         if (negativeChache.containsKey(url)) {
             if (System.currentTimeMillis() - negativeChache.get(url).getTime() < 20 * 60 * 1000) {
@@ -80,8 +107,14 @@ public class RinexNavigationGpsNEW implements NavigationIono {
             }
         }
 
+
         String filename = url.replaceAll("[ ,/:]", "_");
         if (filename.endsWith(".gz")) filename = filename.substring(0, filename.length() - 3);
+
+
+
+        //File rnf = new File(this.context.getCacheDir(), filename);
+
 
         File rnf = new File(RNP_CACHE, filename);
         if (rnf.exists()) {
@@ -100,7 +133,6 @@ public class RinexNavigationGpsNEW implements NavigationIono {
         // if the file doesn't exist of is invalid
         System.out.println(url + " from the net.");
         FTPClient ftp = new FTPClient();
-
 
         try {
 
@@ -122,18 +154,19 @@ public class RinexNavigationGpsNEW implements NavigationIono {
                 e.printStackTrace();
             }
 
-            // 获取响应字符串
-            String replyString = ftp.getReplyString();
-            if (replyString == null) {
-                System.out.println("FTP 响应字符串为 null");
-            } else {
-                System.out.println("FTP 响应字符串: " + replyString);
-                if (replyString.startsWith("230")) {
-                    negativeChache.put(url, new Date());
-                }
+
+            //判断是否登录成功  登陆成功以230开头
+            System.out.println(ftp.getReplyString());
+            if (ftp.getReplyString().startsWith("230")) {
+                negativeChache.put(url, new Date());
             }
 
+
+            // After connection attempt, you should check the reply code to
+            // verify
+            // success.
             reply = ftp.getReplyCode();
+
             if (!FTPReply.isPositiveCompletion(reply)) {
                 try {
                     ftp.disconnect();
@@ -233,19 +266,19 @@ public class RinexNavigationGpsNEW implements NavigationIono {
     }
 
 
-//    public SatellitePosition getSatPositionAndVelocities(long unixTime, double range, int satID, char satType, double receiverClockError) {
-//        //RinexNavigationParserGps rnp = this.rnp;
-//        RinexNavigationParserGpsGLONASS rnp=this.rnp;
-//        if (rnp != null) {
-//            if (rnp.isTimestampInEpocsRange(unixTime)) {
-//                return rnp.getSatPositionAndVelocities(unixTime,range , satID, satType, receiverClockError);
-//            } else {
-//                return null;
-//            }
-//        }
-//
-//        return null;
-//    }
+    public SatellitePosition getSatPositionAndVelocities(long unixTime, double range, int satID, char satType, double receiverClockError) {
+        //RinexNavigationParserGps rnp = this.rnp;
+        RinexNavigationParserGps rnp=this.rnp;
+        if (rnp != null) {
+            if (rnp.isTimestampInEpocsRange(unixTime)) {
+                return rnp.getSatPositionAndVelocities(unixTime,range , satID, satType, receiverClockError);
+            } else {
+                return null;
+            }
+        }
+
+        return null;
+    }
 
     @Override
     public IonoGps getIonoGps() {
@@ -257,3 +290,4 @@ public class RinexNavigationGpsNEW implements NavigationIono {
         return null;
     }
 }
+

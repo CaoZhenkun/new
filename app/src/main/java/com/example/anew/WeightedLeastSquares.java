@@ -48,19 +48,17 @@ public class WeightedLeastSquares {
 
 
 
-    public Coordinates calculatePose(PositioningData positioningData) {
-        positioningData.computDataList.clear();
-        positioningData.computDataList.addAll(positioningData.computDatahash.values());
+    public Coordinates calculatePose(GnssConstellation gnssConstellation,Coordinates pose) {
 
         //final int CONSTELLATION_SIZE = gnssConstellation.getUsedConstellationSize();
-        final int CONSTELLATION_SIZE = positioningData.computDataList.size();
+        final int CONSTELLATION_SIZE = gnssConstellation.testList2.size();
         // Initialize matrices for data storage
 
         //初始化接收机位置矩阵,x,y,z,钟差
         SimpleMatrix rxPosSimpleVector =new SimpleMatrix(4, 1);
-        rxPosSimpleVector.set(0, positioningData.computDataList.get(0).getrecevierX());
-        rxPosSimpleVector.set(1, positioningData.computDataList.get(0).getrecevierY());
-        rxPosSimpleVector.set(2, positioningData.computDataList.get(0).getrecevierZ());
+        rxPosSimpleVector.set(0, pose.getX());
+        rxPosSimpleVector.set(1,  pose.getY());
+        rxPosSimpleVector.set(2,  pose.getZ());
         rxPosSimpleVector.set(3, 0);
 
 
@@ -88,18 +86,18 @@ public class WeightedLeastSquares {
             for (int ii = 0; ii < CONSTELLATION_SIZE; ii++) {
 
                 // Set the measurements into a vector
-                prVect.set(ii, positioningData.computDataList.get(ii).getpseudorange());
+                prVect.set(ii, gnssConstellation.testList2.get(ii).getpseudorange());
 
                 // Compute the satellite coordinates
-                svClkBias.set(ii, positioningData.computDataList.get(ii).getsatelliteClockError());
+                svClkBias.set(ii, gnssConstellation.testList2.get(ii).getSp().getSatelliteClockError());
 
                 ///////////////////////////// PR corrections computations ////////////////////////////////////////////////////
 
 
                 // Assign the computed SV coordinates into a matrix
-                satPosMat.set(ii, 0, positioningData.computDataList.get(ii).getSp().getX());
-                satPosMat.set(ii, 1, positioningData.computDataList.get(ii).getSp().getY());
-                satPosMat.set(ii, 2, positioningData.computDataList.get(ii).getSp().getZ());
+                satPosMat.set(ii, 0, gnssConstellation.testList2.get(ii).getSp().getX());
+                satPosMat.set(ii, 1, gnssConstellation.testList2.get(ii).getSp().getY());
+                satPosMat.set(ii, 2, gnssConstellation.testList2.get(ii).getSp().getZ());
 
 
                 // Compute the elevation and azimuth angles for each satellite
@@ -142,10 +140,10 @@ public class WeightedLeastSquares {
             if(e.getClass() == IndexOutOfBoundsException.class){
                 Log.e(TAG, "calculatePose: Satellites cleared before calculating result!");
             }
-            rxPosSimpleVector.set(0, positioningData.computDataList.get(0).getrecevierX());
-            rxPosSimpleVector.set(1, positioningData.computDataList.get(0).getrecevierY());
-            rxPosSimpleVector.set(2, positioningData.computDataList.get(0).getrecevierZ());
-            rxPosSimpleVector.set(3, 0);
+
+            //gnssConstellation.setRxPos(ZERO_POSE); // Right at the edge of the plot
+            //rxPosSimpleVector = Constellation.getRxPosAsVector(gpsconstellation.getRxPos());
+//            return Coordinates.globalXYZInstance(rxPosSimpleVector.get(0), rxPosSimpleVector.get(1), rxPosSimpleVector.get(2));
         }
 
 		/*
@@ -183,12 +181,12 @@ public class WeightedLeastSquares {
 
                     // Measurement prediction
                     measPred.set( k, distPred.get(k)
-                            +positioningData.computDataList.get(k).getAccumulatedCorrection() - svClkBias.get(k) );
+                                    + gnssConstellation.testList2.get(k).getAccumulatedCorrection() - svClkBias.get(k) );
 
                     // Compute the observation matrix (H)
-                    H.set(k, 0, (positioningData.computDataList.get(0).getrecevierX() - satPosMat.get(k, 0)) / distPred.get(k));
-                    H.set(k, 1, (positioningData.computDataList.get(0).getrecevierY() - satPosMat.get(k, 1)) / distPred.get(k));
-                    H.set(k, 2, (positioningData.computDataList.get(0).getrecevierZ() - satPosMat.get(k, 2)) / distPred.get(k));
+                    H.set(k, 0, ( pose.getX() - satPosMat.get(k, 0)) / distPred.get(k));
+                    H.set(k, 1, ( pose.getY() - satPosMat.get(k, 1)) / distPred.get(k));
+                    H.set(k, 2, ( pose.getZ() - satPosMat.get(k, 2)) / distPred.get(k));
                     H.set(k, 3, 1.0);
 
                 }
@@ -223,10 +221,8 @@ public class WeightedLeastSquares {
             } else if (e.getClass() == SingularMatrixException.class) {
                 Log.e(TAG, "calculatePose: SingularMatrixException caught!");
             }
-            rxPosSimpleVector.set(0, positioningData.computDataList.get(0).getrecevierX());
-            rxPosSimpleVector.set(1, positioningData.computDataList.get(0).getrecevierY());
-            rxPosSimpleVector.set(2, positioningData.computDataList.get(0).getrecevierZ());
-            rxPosSimpleVector.set(3, 0);
+            //gnssConstellation.setRxPos(ZERO_POSE); // Right at the edge of the plot
+            //rxPosSimpleVector = Constellation.getRxPosAsVector(gpsconstellation.getRxPos());
             e.printStackTrace();
         }
         System.out.println();
@@ -236,12 +232,12 @@ public class WeightedLeastSquares {
 
         Log.d(TAG, "calculatePose: rxPosSimpleVector (ECEF): " + rxPosSimpleVector.get(0) + ", " + rxPosSimpleVector.get(1) + ", " + rxPosSimpleVector.get(2) + ";");
 
-        Coordinates pose = Coordinates.globalXYZInstance(rxPosSimpleVector.get(0), rxPosSimpleVector.get(1), rxPosSimpleVector.get(2));
-        Log.d(TAG, "calculatePose: pose (ECEF): " + pose.getX() + ", " + pose.getY() + ", " + pose.getZ() + ";");
-        Log.d(TAG, "calculatePose: pose (lat-lon): " + pose.getGeodeticLatitude() + ", " + pose.getGeodeticLongitude() + ", " + pose.getGeodeticHeight() + ";");
-        Log.d(TAG, "calculated PDOP:" + PDOP.get(0) + ";");
+        Coordinates spppose = Coordinates.globalXYZInstance(rxPosSimpleVector.get(0), rxPosSimpleVector.get(1), rxPosSimpleVector.get(2));
+//        Log.d(TAG, "calculatePose: pose (ECEF): " + pose.getX() + ", " + pose.getY() + ", " + pose.getZ() + ";");
+//        Log.d(TAG, "calculatePose: pose (lat-lon): " + pose.getGeodeticLatitude() + ", " + pose.getGeodeticLongitude() + ", " + pose.getGeodeticHeight() + ";");
+//        Log.d(TAG, "calculated PDOP:" + PDOP.get(0) + ";");
 
-        return pose;
+        return spppose;
     }
 
 

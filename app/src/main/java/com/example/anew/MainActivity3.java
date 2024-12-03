@@ -40,9 +40,7 @@ import android.widget.Toast;
 
 import com.example.anew.Constellations.GnssConstellation;
 import com.example.anew.Constellations.GpsTime;
-import com.example.anew.Ntrip.GNSSEphemericsNtrip;
-import com.example.anew.Ntrip.RTCM3Client;
-import com.example.anew.Ntrip.RTCM3ClientListener;
+
 import com.example.anew.coord.Coordinates;
 import com.google.android.material.navigation.NavigationView;
 import com.example.anew.RinexFileLogger.Rinex;
@@ -104,8 +102,7 @@ public class MainActivity3 extends AppCompatActivity  {
     //GPS时间
     private GpsTime gpsTime;
 
-    //参与运算的广播星历系统
-    private GNSSEphemericsNtrip mGNSSEphemericsNtrip;
+
     //数据类部分
     private PositioningData positioningData;
     private GnssConstellation mGnssConstellation;
@@ -116,7 +113,7 @@ public class MainActivity3 extends AppCompatActivity  {
 //
     private Coordinates pose;//获取的手机PGS芯片自带位置，用于平差计算
     private WeightedLeastSquares mWeightedLeastSquares;//最小二乘
-    private WeightedLeastSquares1 mWeightedLeastSquares1;//最小二乘
+
 
     boolean poseinitialized=false;
 
@@ -202,8 +199,8 @@ public class MainActivity3 extends AppCompatActivity  {
                         return;
                     }
 
-                    mGNSSEphemericsNtrip=new GNSSEphemericsNtrip(new RTCM3Client(Constants.DEF_NTRIP_HOST,Integer.parseInt(Constants.DEF_NTRIP_PORT),"RTCM3EPH01", Constants.DEF_NTRIP_USERNAME,Constants.DEF_NTRIP_PASSWARD, RTCMListener));
-                    new Thread(mGNSSEphemericsNtrip,"GNSS").start();
+//                    mGNSSEphemericsNtrip=new GNSSEphemericsNtrip(new RTCM3Client(Constants.DEF_NTRIP_HOST,Integer.parseInt(Constants.DEF_NTRIP_PORT),"RTCM3EPH01", Constants.DEF_NTRIP_USERNAME,Constants.DEF_NTRIP_PASSWARD, RTCMListener));
+//                    new Thread(mGNSSEphemericsNtrip,"GNSS").start();
 
                     startRecordRinex();
                     isRecord = true;
@@ -215,7 +212,7 @@ public class MainActivity3 extends AppCompatActivity  {
                 }else {
                     isRecord = false;
                     stopRecordRinex();
-                    mGNSSEphemericsNtrip.stopNtrip();
+                    //mGNSSEphemericsNtrip.stopNtrip();
                     textViewBtnStart.setBackgroundResource(R.drawable.bg_btn_lightgreen);
                     textViewBtnStart.setText("开始记录");
                     notice("结束记录");
@@ -227,8 +224,8 @@ public class MainActivity3 extends AppCompatActivity  {
         sharedPreferences=getSharedPreferences(Constants.SPP_SETTING,0);
 
         //平差类初始化
-        //mWeightedLeastSquares = new WeightedLeastSquares();
-        mWeightedLeastSquares1=new WeightedLeastSquares1();
+        mWeightedLeastSquares = new WeightedLeastSquares();
+
 
 
         // 从 SharedPreferences 中读取参数
@@ -262,18 +259,7 @@ public class MainActivity3 extends AppCompatActivity  {
 
             //mGnssConstellation=new GnssConstellation(sharedPreferences_spp.getInt(Constants.KEY_GPS_SYSTEM,Constants.DEF_GPS_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_GAL_SYSTEM ,Constants.DEF_GAL_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_GLO_SYSTEM,Constants.DEF_GLO_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_BDS_SYSTEM,Constants.DEF_BDS_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_QZSS_SYSTEM,Constants.DEF_QZSS_SYSTEM));
 
-        //RTCM文件监听初始化
-//        GPSRTCM3Client = new RTCM3Client("ntrip.gnsslab.cn", 2101, "RTCM3EPH-MGEX-GPS", "liuzancumt", "liuz@2021",rawGPSDataProcessing);
-//        SSRRTCM3Client = new RTCM3Client("ntrip.gnsslab.cn", 2101, "IONO01IGS0", "liuzancumt", "liuz@2021",rawGPSDataProcessing);
-//        IonoRTCM3Client = new RTCM3Client("ntrip.gnsslab.cn", 2101, "SSRA01GFZ0", "liuzancumt", "liuz@2021",rawGPSDataProcessing);
-        //异步函数处理NTRIP协议连接，包括域名解析
-        //Thread GPSthread = new Thread(GPSRTCM3Client);
-        //Thread SSRthread = new Thread(GPSRTCM3Client);
-        //Thread Ionothread = new Thread(GPSRTCM3Client);
-        //开启处理RTCM数据的线程
-        //GPSthread.start();
-        //SSRthread.start();
-        //Ionothread.start();
+
 
 
         //GNSS监听器初始化
@@ -285,12 +271,7 @@ public class MainActivity3 extends AppCompatActivity  {
 
     }
 
-    private RTCM3ClientListener RTCMListener=new RTCM3ClientListener() {
-        @Override
-        public void onDataReceived(byte[] data) {
-            mGNSSEphemericsNtrip.onDataReceived(data);
-        }
-    };
+
     //软件权限申请
     private void registerPermission() {
         //精确位置权限
@@ -341,8 +322,8 @@ public class MainActivity3 extends AppCompatActivity  {
             GnssClock clock = eventArgs.getClock();
             gpsTime =new GpsTime(clock);
             System.out.println("j");
-            //mGnssConstellation.updateMeasurements(eventArgs);
-            mGnssConstellation.updateMeasurements1(eventArgs);
+            mGnssConstellation.updateMeasurements(eventArgs);
+            //mGnssConstellation.updateMeasurements1(eventArgs);
 
 //            textViewSizeAll.setText("历元观测数目"+ positioningData.gnssDataArrayList.size());
 //            textViewSizeGps.setText("GPS"+ positioningData.gpsDataList.size());
@@ -370,11 +351,13 @@ public class MainActivity3 extends AppCompatActivity  {
 
             if(pose!=null){
                 mGnssConstellation.calculateSatPosition(pose);
-                textNum.setText("数目:"+positioningData.gnssDataArrayListtest.size()+"\n"+"数目:"+positioningData.computDataList.size());
+                textNum.setText("数目:"+mGnssConstellation.testList2.size()+"\n"+"数目:"+positioningData.computDataList.size());
 
 
-                if (positioningData.computDataList.size() >= 5) {
-                    pose=mWeightedLeastSquares1.calculatePose(positioningData,pose);
+                //if (positioningData.computDataList.size() >= 5) {
+                if (mGnssConstellation.testList2.size() >= 5) {
+                    //pose=mWeightedLeastSquares.calculatePose(positioningData,pose);
+                    pose=mWeightedLeastSquares.calculatePose(mGnssConstellation,pose);
                     textViewResult.setText(String.format("X: %.6f  Y: %.6f  Z: %.2f", pose.getX(), pose.getY(), pose.getZ()));
 
                     // 创建 Intent 并发送广播
@@ -419,7 +402,7 @@ public class MainActivity3 extends AppCompatActivity  {
         public void onLocationChanged(Location mlocation) {
             if (mlocation != null && !poseinitialized) {
                 location = mlocation;
-                xyz = Coordinates.WGS84LLAtoXYZ(location.getLatitude(), location.getLongitude(), location.getAltitude());
+                //xyz = Coordinates.WGS84LLAtoXYZ(location.getLatitude(), location.getLongitude(), location.getAltitude());
                 pose = Coordinates.globalGeodInstance(location.getLatitude(), location.getLongitude(), location.getAltitude());
                 textViewLocation.setText(String.format("X: %.6f  Y: %.6f  Z: %.2f", pose.getX(), pose.getY(), pose.getZ()));
                 poseinitialized = true;

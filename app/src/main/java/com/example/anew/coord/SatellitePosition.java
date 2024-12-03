@@ -20,6 +20,8 @@
  */
 package com.example.anew.coord;
 
+import com.example.anew.Constants;
+
 import org.ejml.simple.SimpleMatrix;
 
 /**
@@ -29,145 +31,126 @@ import org.ejml.simple.SimpleMatrix;
  *
  * @author Eugenio Realini, Cryms.com
  */
-public class SatellitePosition extends Coordinates {
-    public static final SatellitePosition UnhealthySat = new SatellitePosition(0, 0, '0', 0, 0, 0);
+public class SatellitePosition extends Coordinates{
+  public static final SatellitePosition UnhealthySat = new SatellitePosition(0, 0, '0', 0, 0, 0); 
 
-    private int satID; /* Satellite ID number */
-    private char satType;
-    private double satelliteClockError; /* Correction due to satellite clock error in seconds*/
-    //private double range;
-    private long unixTime;
-    private boolean predicted;
-    private boolean maneuver;
-    private SimpleMatrix speed;
-    private double var;//卫星位置和钟的方差
-    private SimpleMatrix SATECEF;
+	private int satID; /* Satellite ID number */
+	private char satType;
+	private double satelliteClockError; /* Correction due to satellite clock error in seconds*/
+	//private double range;
+	private long unixTime;
+	private boolean predicted;
+	private boolean maneuver;
+  private SimpleMatrix speed;
 
+	public SatellitePosition(long unixTime, int satID, char satType, double x, double y, double z) {
+		super();
 
-    public SatellitePosition(long unixTime, int satID, char satType, double x, double y, double z) {
-        super();
+		this.unixTime = unixTime;
+		this.satID = satID;
+		this.satType = satType;
 
-        this.unixTime = unixTime;
-        this.satID = satID;
-        this.satType = satType;
+		this.setXYZ(x, y, z);
+    this.speed = new SimpleMatrix(3, 1);
+	}
 
-        this.setXYZ(x, y, z);
-        this.speed = new SimpleMatrix(3, 1);
-    }
+	/**
+	 * @return the satID
+	 */
+	public int getSatID() {
+		return satID;
+	}
 
-    /**
-     * @return the satID
-     */
-    public int getSatID() {
-        return satID;
-    }
+	/**
+	 * @param satID the satID to set
+	 */
+	public void setSatID(int satID) {
+		this.satID = satID;
+	}
+	
+	/**
+	 * @return the satType
+	 */
+	public char getSatType() {
+		return satType;
+	}
 
-    /**
-     * @param satID the satID to set
-     */
-    public void setSatID(int satID) {
-        this.satID = satID;
-    }
+	/**
+	 * @param satType the satType to set
+	 */
+	public void setSatType(char satType) {
+		this.satType = satType;
+	}
 
-    public double getvar() {
-        return var;
-    }
+	/**
+	 * @return the timeCorrection
+	 */
+	public double getSatelliteClockError() {
+		return satelliteClockError* Constants.SPEED_OF_LIGHT;
+	}
 
-    public void setvar(double var) {
-        this.var = var;
-    }
+	/**
+	 * @param timeCorrection the timeCorrection to set
+	 */
+	public void setSatelliteClockError(double timeCorrection) {
+		this.satelliteClockError = timeCorrection;
+	}
 
-    /**
-     * @return the satType
-     */
-    public char getSatType() {
-        return satType;
-    }
+	/**
+	 * @return the time
+	 */
+	public long getUtcTime() {
+		return unixTime;
+	}
 
-    /**
-     * @param satType the satType to set
-     */
-    public void setSatType(char satType) {
-        this.satType = satType;
-    }
+	/**
+	 * @param predicted the predicted to set
+	 */
+	public void setPredicted(boolean predicted) {
+		this.predicted = predicted;
+	}
 
-    /**
-     * @return the timeCorrection
-     */
-    public double getSatelliteClockError() {
-        return satelliteClockError;
-    }
+	/**
+	 * @return the predicted
+	 */
+	public boolean isPredicted() {
+		return predicted;
+	}
 
-    /**
-     * @param timeCorrection the timeCorrection to set
-     */
-    public void setSatelliteClockError(double timeCorrection) {
-        this.satelliteClockError = timeCorrection;
-    }
+	/**
+	 * @param maneuver the maneuver to set
+	 */
+	public void setManeuver(boolean maneuver) {
+		this.maneuver = maneuver;
+	}
 
-    /**
-     * @return the time
-     */
-    public long getUtcTime() {
-        return unixTime;
-    }
+	/**
+	 * @return the maneuver
+	 */
+	public boolean isManeuver() {
+		return maneuver;
+	}
 
-    /**
-     * @param predicted the predicted to set
-     */
-    public void setPredicted(boolean predicted) {
-        this.predicted = predicted;
-    }
+  public SimpleMatrix getSpeed() {
+    return speed;
+  }
 
-    /**
-     * @return the predicted
-     */
-    public boolean isPredicted() {
-        return predicted;
-    }
+  public void setSpeed( double xdot, double ydot, double zdot) {
+    this.speed.set( 0, xdot );
+    this.speed.set( 1, ydot );
+    this.speed.set( 2, zdot );
+  }
+	
+	public String toString(){
+		return "X:"+this.getX()+" Y:"+this.getY()+" Z:"+getZ()+" clkCorr:"+getSatelliteClockError();
+	}
 
-    /**
-     * @param maneuver the maneuver to set
-     */
-    public void setManeuver(boolean maneuver) {
-        this.maneuver = maneuver;
-    }
-
-    /**
-     * @return the maneuver
-     */
-    public boolean isManeuver() {
-        return maneuver;
-    }
-
-    public SimpleMatrix getSpeed() {
-        return speed;
-    }
-
-    public void setSpeed(double xdot, double ydot, double zdot) {
-        this.speed.set(0, xdot);
-        this.speed.set(1, ydot);
-        this.speed.set(2, zdot);
-    }
-
-    public String toString() {
-        return "X:" + this.getX() + " Y:" + this.getY() + " Z:" + getZ() + " clkCorr:" + getSatelliteClockError();
-    }
-
-    public Object clone() {
-        SatellitePosition sp = new SatellitePosition(this.unixTime, this.satID, this.satType, this.getX(), this.getY(), this.getZ());
-        sp.maneuver = this.maneuver;
-        sp.predicted = this.predicted;
-        sp.satelliteClockError = this.satelliteClockError;
-        sp.setSpeed(speed.get(0), speed.get(1), speed.get(2));
-        return sp;
-    }
-
-    public SimpleMatrix getSATECEF() {
-        return SATECEF;
-    }
-
-    public void setSATECEF(SimpleMatrix SATECEF) {
-        this.SATECEF = SATECEF;
-    }
+	public Object clone(){
+		SatellitePosition sp = new SatellitePosition(this.unixTime,this.satID, this.satType, this.getX(),this.getY(),this.getZ());
+		sp.maneuver = this.maneuver;
+		sp.predicted = this.predicted;
+		sp.satelliteClockError = this.satelliteClockError;
+    sp.setSpeed( speed.get(0), speed.get(1), speed.get(2));
+		return sp;
+	}
 }

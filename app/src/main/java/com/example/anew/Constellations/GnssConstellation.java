@@ -15,9 +15,9 @@ import android.util.Log;
 
 import com.example.anew.Constants;
 import com.example.anew.GNSSData;
-import com.example.anew.Ntrip.GNSSEphemericsNtrip;
+
 import com.example.anew.PositioningData;
-//import com.gnss.gnssdatalogger.Ntrip.GNSSEphemericsNtrip;
+
 import com.example.anew.coord.Coordinates;
 import com.example.anew.Satellites.*;
 import com.example.anew.GNSSData;
@@ -25,7 +25,8 @@ import com.example.anew.GNSSData;
 import com.example.anew.coord.SatellitePosition;
 import com.example.anew.corrections.*;
 import com.example.anew.GNSSConstants;
-import com.example.anew.navifromftp.RinexNavigationGpsNEW;
+import com.example.anew.navifromftp.RinexNavigationGps;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,7 +55,8 @@ public class GnssConstellation   {
     protected double tRxGPS;
     protected double weekNumberNanos;
     private Handler uiHandler;
-
+    public List<GNSSData> testList=new ArrayList<>();
+    public List<GNSSData> testList2=new ArrayList<>();
     public static boolean approximateEqual(double a, double b, double eps) {
         return Math.abs(a - b) < eps;
     }
@@ -70,7 +72,7 @@ public class GnssConstellation   {
     private int QZSS_SYSTEM;
 
 
-    private RinexNavigationGpsNEW mrinexNavigationMnew=new RinexNavigationGpsNEW();
+    private RinexNavigationGps mrinexNavigationMnew=new RinexNavigationGps();
     //private RinexNavigationParser mRinexNavigationParser=new RinexNavigationParser();
 
 
@@ -106,11 +108,12 @@ public class GnssConstellation   {
 //            }
 //        }
 //    }
-public void updateMeasurements1(GnssMeasurementsEvent event) {
+public void updateMeasurements(GnssMeasurementsEvent event) {
 
     synchronized (this) {
+        //******************************************下面中文注释是AI生成，不可都信***************************************//
         //初始化变量
-        positioningData.gnssDataArrayListtest.clear();
+        testList.clear();
         //获取 GNSS 时钟信息
         GnssClock gnssClock = event.getClock();//获取 GNSS 时钟信息Gets the GNSS receiver clock information associated with the measurements for the current event.
         long TimeNanos = gnssClock.getTimeNanos();//获取当前时间的纳秒数
@@ -128,6 +131,7 @@ public void updateMeasurements1(GnssMeasurementsEvent event) {
             FullBiasNanos = gnssClock.getFullBiasNanos();
             fullBiasNanosInitialized = true;
         }
+
 
 
         for (GnssMeasurement measurement : event.getMeasurements()) {
@@ -186,258 +190,249 @@ public void updateMeasurements1(GnssMeasurementsEvent event) {
             //否则，创建 SatelliteParameters 对象并添加到 unusedSatellites 列表中，并增加 visibleButNotUsed 计数。
             if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) { // && towUncertainty
                 //存储卫星参数的对象
+
                 GNSSData gnssData=new GNSSData();
-
-                gnssData.setSATstate(1);
+                gnssData.setSATID(measurement.getSvid());
+                gnssData.setpseudorange(pseudorange);
                 gnssData.setGnssType('G');
-                gnssData.setpseudorange(pseudorange);//存储伪距
-                gnssData.setSATID(measurement.getSvid());//存储卫星ID
+                testList.add(gnssData);
 
-
-
-
-                //measurement.getCn0DbHz()获取载噪比（C/N0），单位为dB-Hz。
-                gnssData.setSnr(measurement.getCn0DbHz());
-
-
-                if (measurement.hasCarrierFrequencyHz())
-                    //如果有载波，获取载波频率
-                    gnssData.setFrequency(measurement.getCarrierFrequencyHz());
-
-                positioningData.gnssDataArrayListtest.add(gnssData);
-
+            } else {
 
             }
         }
-        System.out.println("here");
     }
 }
-    public void updateMeasurements(GnssMeasurementsEvent event) {
-        synchronized (this) {
-            positioningData.gnssDataArrayList.clear();
-            positioningData.gpsDataList.clear();
-            positioningData.galileoDataList.clear();
-            positioningData.bdsDataList.clear();
-            positioningData.glonassDataList.clear();
-            positioningData.qzssDataList.clear();
-
-
-            GnssClock gnssClock = event.getClock();
-            positioningData.setEpochTime(new GpsTime(gnssClock));//历元的GPS时间
-            //使用当前历元的TimeNanos
-            long TimeNanos = gnssClock.getTimeNanos();
-            // 使用第一个历元的FullBiasNanos和BiasNanos
-            if (!fullBiasNanosInitialized) {
-                if(!gnssClock.hasFullBiasNanos())
-                {
-                    return;
-                }
-                FullBiasNanos = gnssClock.getFullBiasNanos();
-                if(gnssClock.hasBiasNanos())
-                {
-                    BiasNanos=gnssClock.getBiasNanos();
-                }
-                fullBiasNanosInitialized = true;
-            }
-
-            for (GnssMeasurement measurement : event.getMeasurements()) {
+//    public void updateMeasurements(GnssMeasurementsEvent event) {
+//        synchronized (this) {
+////            positioningData.gnssDataArrayList.clear();
+////            positioningData.gpsDataList.clear();
+////            positioningData.galileoDataList.clear();
+////            positioningData.bdsDataList.clear();
+////            positioningData.glonassDataList.clear();
+////            positioningData.qzssDataList.clear();
+////            positioningData.gnssDataArrayListtest.clear();
+//            testList.clear();
+//
+//
+//            GnssClock gnssClock = event.getClock();
+//            positioningData.setEpochTime(new GpsTime(gnssClock));//历元的GPS时间
+//            //使用当前历元的TimeNanos
+//            long TimeNanos = gnssClock.getTimeNanos();
+//            // 使用第一个历元的FullBiasNanos和BiasNanos
+//            if (!fullBiasNanosInitialized) {
+//                if(!gnssClock.hasFullBiasNanos())
+//                {
+//                    return;
+//                }
+//                FullBiasNanos = gnssClock.getFullBiasNanos();
+//                if(gnssClock.hasBiasNanos())
+//                {
+//                    BiasNanos=gnssClock.getBiasNanos();
+//                }
+//                fullBiasNanosInitialized = true;
+//            }
+//
+//            for (GnssMeasurement measurement : event.getMeasurements()) {
 //                if(measurement.getConstellationType() != GnssStatus.CONSTELLATION_GPS)
 //                {
 //                    continue;
 //                }
-
-                weekNumberNanos =
-                         (Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK)
-                                                        * Constants.NUMBER_NANO_SECONDS_PER_WEEK);
-
-                double TimeOffsetNanos=measurement.getTimeOffsetNanos();
-                double tRxNanos = TimeNanos+ TimeOffsetNanos - (FullBiasNanos + BiasNanos);//手机硬件时间减去与GPS时间的偏差，加偏差修正量,得到GPS时间
-                tRxGPS=tRxNanos;//GPS时间
-                tRxNanos=tRxNanos-weekNumberNanos;//GPS周内秒
-
-
-
-                if((measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO && measurement.getState()==GnssMeasurement.STATE_GAL_E1C_2ND_CODE_LOCK)){
-                    tRxNanos=tRxGPS% Constants.NumberNanoSeconds100Milli;//Galileo日内秒 for Galileo with E1C 2nd code status
-                }
-
-                double tRxSeconds = tRxNanos * 1e-9;
-                double tTxSeconds = measurement.getReceivedSvTimeNanos() * 1e-9;
-
-
-                if ((measurement.getConstellationType() == GnssStatus.CONSTELLATION_GLONASS)) {
-                    double tRxSeconds_GLO = tRxSeconds % 86400;
-                    double tTxSeconds_GLO = tTxSeconds - 10800 + leapseconds;
-                    if (tTxSeconds_GLO < 0) {
-                        tTxSeconds_GLO = tTxSeconds_GLO + 86400;
-                    }
-                    tRxSeconds = tRxSeconds_GLO;
-                    tTxSeconds = tTxSeconds_GLO;
-
-                }
-                if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_BEIDOU) {
-                    double tRxSeconds_BDS = tRxSeconds;
-                    double tTxSeconds_BDS = tTxSeconds +14;
-                    if (tTxSeconds_BDS > 604800) {
-                        tTxSeconds_BDS = tTxSeconds_BDS - 604800;
-                    }
-
-                    tRxSeconds = tRxSeconds_BDS;
-                    tTxSeconds = tTxSeconds_BDS;
-
-                }
-
-                double prSeconds = tRxSeconds - tTxSeconds;
-                boolean iRollover = prSeconds > 604800 / 2;
-                if (iRollover) {
-                    double delS = Math.round(prSeconds / 604800) * 604800;
-                    double prS = prSeconds - delS;
-                    double maxBiasSeconds = 10;
-                    if (prS > maxBiasSeconds) {
-                        Log.e("RollOver", "Rollover Error");
-                        iRollover = true;
-                    } else {
-                        tRxSeconds = tRxSeconds - delS;
-                        prSeconds = tRxSeconds - tTxSeconds;
-                        iRollover = false;
-                    }
-                }
-                double pseudorange = prSeconds * 2.99792458e8;//伪距
-
-
-                double frequency=0;
-                String frequencyLable="";
-                char GnssType;
-                if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS)
-                {
-                    GnssType='G';
-                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency=L1_FREQUENCY;
-                        frequencyLable="L1";
-                    }
-                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency = L5_FREQUENCY;
-                        frequencyLable = "L5";
-                    }
-                    else {
-                        continue;
-                    }
-                } else if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO) {
-                    GnssType='E';
-                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency=L1_FREQUENCY;
-                        frequencyLable="L1";
-                    }
-                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency = L5_FREQUENCY;
-                        frequencyLable = "L5";
-                    }
-                    else {
-                        continue;
-                    }
-                }else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GLONASS){
-                    GnssType='R';
-                    frequency=measurement.getCarrierFrequencyHz();
-                    frequencyLable="G1";
-                } else if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_BEIDOU) {
-                    GnssType='C';
-                    if (approximateEqual(measurement.getCarrierFrequencyHz(), B1I_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency=B1I_FREQUENCY;
-                        frequencyLable="B1";
-                    }
-                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), B1C_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency=B1C_FREQUENCY;
-                        frequencyLable="L1";
-                    }
-                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), B2a_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency=B2a_FREQUENCY;
-                        frequencyLable="L5";
-                    }
-                    else {
-                        continue;
-                    }
-                } else if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS) {
-                    GnssType='J';
-                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency=L1_FREQUENCY;
-                        frequencyLable="L1";
-                    }
-                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
-                        frequency = L5_FREQUENCY;
-                        frequencyLable = "L5";
-                    }
-                    else {
-                        continue;
-                    }
-                }else {
-                    continue;
-                }
-                if(frequency==0)
-                {
-                    frequency=measurement.getCarrierFrequencyHz();
-                }
-
-                int measState = measurement.getState();
-                // 观测值状态检测
-                boolean codeLock = (measState & GnssMeasurement.STATE_CODE_LOCK) != 0;
-                boolean towDecoded = (measState & GnssMeasurement.STATE_TOW_DECODED) != 0;
-                boolean towKnown = false;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    towKnown = (measState & GnssMeasurement.STATE_TOW_KNOWN) != 0;
-                }
-                if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) {
-                    GNSSData gnssData=new GNSSData();
-                    gnssData.setSATstate(1);
-                    gnssData.setGnssType(GnssType);
-                    gnssData.setFrequency(frequency);
-                    gnssData.setFrequencyLable(frequencyLable);
-                    gnssData.setPrn(addprn(GnssType, measurement.getSvid()));//存储Prn与频率
-                    gnssData.setPrnAndF(addprn(GnssType,measurement.getSvid(),frequencyLable));
-                    gnssData.setpseudorange(pseudorange);//存储伪距
-                    gnssData.setSATID(measurement.getSvid());//存储卫星ID
-                    //载波观测值获取
-                    double ADR = measurement.getAccumulatedDeltaRangeMeters();
-                    double λ = 2.99792458e8 / frequency;
-                    double phase = ADR / λ;
-                    gnssData.setphase(phase);//存储载波
-
-                    gnssData.setSnr(measurement.getCn0DbHz());//存储获取载噪比
-
-                    gnssData.setDoppler(measurement.getPseudorangeRateMetersPerSecond() / λ);//存储多普勒值
-                    //positioningData.gnssDatahash.put(positioningData.gnssData.getPrn(),positioningData.gnssData);//将gnssdata存入哈希表中
-                    positioningData.gnssDataArrayList.add(gnssData);
-
-                    if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS)
-                    {
-                        positioningData.gpsDataList.add(gnssData);
-                    }
-                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO)
-                    {
-                        positioningData.galileoDataList.add(gnssData);
-                    }
-                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_BEIDOU)
-                    {
-                        positioningData.bdsDataList.add(gnssData);
-                    }
-                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GLONASS)
-                    {
-                        positioningData.glonassDataList.add(gnssData);
-                    }
-                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
-                    {
-                        positioningData.qzssDataList.add(gnssData);
-                    }
-
-
-//                    sendUiUpdateMessage("调试", "伪距="+positioningData.gnssData.getpseudorange()+"卫星ID="+positioningData.gnssData.getPrn()+"\n"+"载波="+
-//                            positioningData.gnssData.getphase()+"卫星状态="+ positioningData.gnssData.getSATstate());
-
-                }
-            }
-            distributeData();
-            System.out.println("hhgg");
-        }
-    }
+//
+//                weekNumberNanos =
+//                         (Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK)
+//                                                        * Constants.NUMBER_NANO_SECONDS_PER_WEEK);
+//
+//                double TimeOffsetNanos=measurement.getTimeOffsetNanos();
+//                double tRxNanos = TimeNanos+ TimeOffsetNanos - (FullBiasNanos + BiasNanos);//手机硬件时间减去与GPS时间的偏差，加偏差修正量,得到GPS时间
+//                tRxGPS=tRxNanos;//GPS时间
+//                tRxNanos=tRxNanos-weekNumberNanos;//GPS周内秒
+//
+//
+//
+//                if((measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO && measurement.getState()==GnssMeasurement.STATE_GAL_E1C_2ND_CODE_LOCK)){
+//                    tRxNanos=tRxGPS% Constants.NumberNanoSeconds100Milli;//Galileo日内秒 for Galileo with E1C 2nd code status
+//                }
+//
+//                double tRxSeconds = tRxNanos * 1e-9;
+//                double tTxSeconds = measurement.getReceivedSvTimeNanos() * 1e-9;
+//
+//
+//                if ((measurement.getConstellationType() == GnssStatus.CONSTELLATION_GLONASS)) {
+//                    double tRxSeconds_GLO = tRxSeconds % 86400;
+//                    double tTxSeconds_GLO = tTxSeconds - 10800 + leapseconds;
+//                    if (tTxSeconds_GLO < 0) {
+//                        tTxSeconds_GLO = tTxSeconds_GLO + 86400;
+//                    }
+//                    tRxSeconds = tRxSeconds_GLO;
+//                    tTxSeconds = tTxSeconds_GLO;
+//
+//                }
+//                if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_BEIDOU) {
+//                    double tRxSeconds_BDS = tRxSeconds;
+//                    double tTxSeconds_BDS = tTxSeconds +14;
+//                    if (tTxSeconds_BDS > 604800) {
+//                        tTxSeconds_BDS = tTxSeconds_BDS - 604800;
+//                    }
+//
+//                    tRxSeconds = tRxSeconds_BDS;
+//                    tTxSeconds = tTxSeconds_BDS;
+//
+//                }
+//
+//                double prSeconds = tRxSeconds - tTxSeconds;
+//                boolean iRollover = prSeconds > 604800 / 2;
+//                if (iRollover) {
+//                    double delS = Math.round(prSeconds / 604800) * 604800;
+//                    double prS = prSeconds - delS;
+//                    double maxBiasSeconds = 10;
+//                    if (prS > maxBiasSeconds) {
+//                        Log.e("RollOver", "Rollover Error");
+//                        iRollover = true;
+//                    } else {
+//                        tRxSeconds = tRxSeconds - delS;
+//                        prSeconds = tRxSeconds - tTxSeconds;
+//                        iRollover = false;
+//                    }
+//                }
+//                double pseudorange = prSeconds * 2.99792458e8;//伪距
+//
+//
+//                double frequency=0;
+//                String frequencyLable="";
+//                char GnssType;
+//                if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS)
+//                {
+//                    GnssType='G';
+//                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency=L1_FREQUENCY;
+//                        frequencyLable="L1";
+//                    }
+//                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency = L5_FREQUENCY;
+//                        frequencyLable = "L5";
+//                    }
+//                    else {
+//                        continue;
+//                    }
+//                } else if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO) {
+//                    GnssType='E';
+//                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency=L1_FREQUENCY;
+//                        frequencyLable="L1";
+//                    }
+//                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency = L5_FREQUENCY;
+//                        frequencyLable = "L5";
+//                    }
+//                    else {
+//                        continue;
+//                    }
+//                }else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GLONASS){
+//                    GnssType='R';
+//                    frequency=measurement.getCarrierFrequencyHz();
+//                    frequencyLable="G1";
+//                } else if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_BEIDOU) {
+//                    GnssType='C';
+//                    if (approximateEqual(measurement.getCarrierFrequencyHz(), B1I_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency=B1I_FREQUENCY;
+//                        frequencyLable="B1";
+//                    }
+//                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), B1C_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency=B1C_FREQUENCY;
+//                        frequencyLable="L1";
+//                    }
+//                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), B2a_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency=B2a_FREQUENCY;
+//                        frequencyLable="L5";
+//                    }
+//                    else {
+//                        continue;
+//                    }
+//                } else if (measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS) {
+//                    GnssType='J';
+//                    if (approximateEqual(measurement.getCarrierFrequencyHz(), L1_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency=L1_FREQUENCY;
+//                        frequencyLable="L1";
+//                    }
+//                    else if (approximateEqual(measurement.getCarrierFrequencyHz(), L5_FREQUENCY, FREQUENCY_MATCH_RANGE)) {
+//                        frequency = L5_FREQUENCY;
+//                        frequencyLable = "L5";
+//                    }
+//                    else {
+//                        continue;
+//                    }
+//                }else {
+//                    continue;
+//                }
+//                if(frequency==0)
+//                {
+//                    frequency=measurement.getCarrierFrequencyHz();
+//                }
+//
+//                int measState = measurement.getState();
+//                // 观测值状态检测
+//                boolean codeLock = (measState & GnssMeasurement.STATE_CODE_LOCK) != 0;
+//                boolean towDecoded = (measState & GnssMeasurement.STATE_TOW_DECODED) != 0;
+//                boolean towKnown = false;
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                    towKnown = (measState & GnssMeasurement.STATE_TOW_KNOWN) != 0;
+//                }
+//                if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) {
+//                    GNSSData gnssData=new GNSSData();
+//                    gnssData.setSATstate(1);
+//                    gnssData.setGnssType(GnssType);
+//                    gnssData.setFrequency(frequency);
+//                    gnssData.setFrequencyLable(frequencyLable);
+//                    gnssData.setPrn(addprn(GnssType, measurement.getSvid()));//存储Prn与频率
+//                    gnssData.setPrnAndF(addprn(GnssType,measurement.getSvid(),frequencyLable));
+//                    gnssData.setpseudorange(pseudorange);//存储伪距
+//                    gnssData.setSATID(measurement.getSvid());//存储卫星ID
+//                    //载波观测值获取
+//                    double ADR = measurement.getAccumulatedDeltaRangeMeters();
+//                    double λ = 2.99792458e8 / frequency;
+//                    double phase = ADR / λ;
+//                    gnssData.setphase(phase);//存储载波
+//
+//                    gnssData.setSnr(measurement.getCn0DbHz());//存储获取载噪比
+//
+//                    gnssData.setDoppler(measurement.getPseudorangeRateMetersPerSecond() / λ);//存储多普勒值
+//                    //positioningData.gnssDatahash.put(positioningData.gnssData.getPrn(),positioningData.gnssData);//将gnssdata存入哈希表中
+//                    positioningData.gnssDataArrayList.add(gnssData);
+//
+//                    if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS)
+//                    {
+////                        positioningData.gpsDataList.add(gnssData);
+////                        positioningData.gnssDataArrayListtest.add(gnssData);
+//                        testList.add(gnssData);
+//                    }
+//                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO)
+//                    {
+//                        positioningData.galileoDataList.add(gnssData);
+//                    }
+//                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_BEIDOU)
+//                    {
+//                        positioningData.bdsDataList.add(gnssData);
+//                    }
+//                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_GLONASS)
+//                    {
+//                        positioningData.glonassDataList.add(gnssData);
+//                    }
+//                    else if(measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
+//                    {
+//                        positioningData.qzssDataList.add(gnssData);
+//                    }
+//
+//
+////                    sendUiUpdateMessage("调试", "伪距="+positioningData.gnssData.getpseudorange()+"卫星ID="+positioningData.gnssData.getPrn()+"\n"+"载波="+
+////                            positioningData.gnssData.getphase()+"卫星状态="+ positioningData.gnssData.getSATstate());
+//
+//                }
+//            }
+//            //distributeData();
+//            System.out.println("hhgg");
+//        }
+//    }
 
     public void distributeData() {
         // 清空
@@ -1215,37 +1210,35 @@ public void updateMeasurements1(GnssMeasurementsEvent event) {
         }
 
     }
-
-    public void calculateSatPosition(GNSSEphemericsNtrip gpsEphemerisNtrip, Coordinates position) {
+    public void calculateSatPosition( Coordinates position) {
 
         // Make a list to hold the satellites that are to be excluded based on elevation/CN0 masking criteria
-        List<GNSSData> excludedSatellites = new ArrayList<>();
-        positioningData.computDataList.clear();
+        //根据给定的 RINEX 导航文件 和接收机位置  计算每个观测卫星的位置，并根据仰角掩码标准排除不符合条件的卫星。
+
+
         synchronized (this) {
-            //System.out.println("calculateSatPosition  此历元卫星数：" + observedSatellites.size());
+
+            //positioningData.computDataList.clear();
+            testList2.clear();
 
 
-            //接收机的位置，这里用接收机的位置主要是为了计算对流层延迟
-            Coordinates rxPos = Coordinates.globalXYZInstance(position.getX(), position.getY(), position.getZ());
-
-            System.out.println("calculateSatPosition   接收机近似位置：" + position.getX() + "," + position.getY() + "," + position.getZ());
-            for (GNSSData gnssData: positioningData.gnssDataArrayList) {
+            for (GNSSData gnssData : testList) {
                 // Computation of the GPS satellite coordinates in ECEF frame
+                //计算GPS卫星在ECEF坐标系中的坐标 地心地固系
 
+                //观测数据的时间
                 // Determine the current GPS week number
-                int gpsWeek = (int) (weekNumberNanos / GNSSConstants.NUMBER_NANO_SECONDS_PER_WEEK);
+                int gpsWeek = (int) (weekNumberNanos / Constants.NUMBER_NANO_SECONDS_PER_WEEK);
 
                 // Time of signal reception in GPS Seconds of the Week (SoW)
                 double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
                 Time tGPS = new Time(gpsWeek, gpsSow);
 
-                //Log.d(TAG,"calculateSatPosition"+tGPS.toString());
-
                 // Convert the time of reception from GPS SoW to UNIX time (milliseconds)
-                long timeRx = tGPS.getMsec();
+                long timeRx = tGPS.getMsec();//UNIX time (milliseconds)
 
-                SatellitePosition sp = gpsEphemerisNtrip.getSatPositionAndVelocities(
-                        timeRx,
+                SatellitePosition sp = mrinexNavigationMnew.getSatPositionAndVelocities(
+                        timeRx,//观测数据的时间
                         gnssData.getpseudorange(),
                         gnssData.getSATID(),
                         gnssData.getGnssType(),
@@ -1253,266 +1246,52 @@ public void updateMeasurements1(GnssMeasurementsEvent event) {
                 );
 
                 if (sp == null) {
-                    excludedSatellites.add(gnssData);
-
                     continue;
                 }
 
-                gnssData.setSATECEF(sp.getSATECEF());
-                gnssData.setsatelliteClockError(sp.getSatelliteClockError());
-                gnssData.setSATspeed(sp.getSpeed());
+                gnssData.setSp(sp);
 
-
-
+                //设置卫星相对于用户的方位角和仰角，并根据这些角度来设置伪距测量方差
                 gnssData.setRxTopo(
                         new TopocentricCoordinates(
-                                rxPos,
-                                sp));
+                                position,
+                                gnssData.getSp()));
 
                 //Add to the exclusion list the satellites that do not pass the masking criteria
                 if (gnssData.getRxTopo().getElevation() < MASK_ELEVATION) {
-                    excludedSatellites.add(gnssData);
-                    continue;
+//                    continue;
                 }
-                System.out.println("calculateSatPosition  此卫星高度角"+gnssData.getRxTopo().getElevation()+"\\"+gnssData.getRxTopo().getAzimuth());
+
+                //计算累计的误差，包括对流层延迟和电离层延迟
+                //遍历计算三种误差并累加
+                ArrayList<Correction> corrections = new ArrayList<>();
+                IonoCorrection ionoCorrection=new IonoCorrection();
+                TropoCorrection tropoCorrection=new TropoCorrection();
+                ShapiroCorrection shapiroCorrection=new ShapiroCorrection();
+                corrections.add(ionoCorrection);
+                corrections.add(tropoCorrection);
+                corrections.add(shapiroCorrection);
                 double accumulatedCorrection = 0;
 
-                ArrayList<Correction> corrections = new ArrayList<>();
-                corrections.add(new ShapiroCorrection());
-                corrections.add(new TropoCorrection());
-                //计算累计的误差，包括对流层延迟,和相对论效应
+
                 for (Correction correction : corrections) {
 
                     correction.calculateCorrection(
                             new Time(timeRx),
-                            rxPos,
-                            sp
-                    );
+                            position,
+                            gnssData.getSp(),
+                            mrinexNavigationMnew);
+
                     accumulatedCorrection += correction.getCorrection();
+
                 }
-
-
-                //System.out.println("calculateSatPosition 此卫星误差为G：" + observedSatellite.getSatId() + "," + accumulatedCorrection);
 
                 gnssData.setAccumulatedCorrection(accumulatedCorrection);
-                positioningData.computDataList.add(gnssData);
+
+                //positioningData.computDataList.add(gnssData);
+                testList2.add(gnssData);
             }
 
-
-        }
-    }
-
-    //计算卫星相关参数需要的方法
-    public void calculateSatPosition(Coordinates position) {
-        synchronized (this) {
-            positioningData.computDatahash.clear();
-            // Determine the current GPS week number
-            int gpsWeek = (int) (weekNumberNanos / GNSSConstants.NUMBER_NANO_SECONDS_PER_WEEK);
-
-            // Time of signal reception in GPS Seconds of the Week (SoW)
-            double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
-
-            double fullTime = (GNSSConstants.UNIX_GPS_DAYS_DIFF * GNSSConstants.SEC_IN_DAY + gpsWeek * GNSSConstants.DAYS_IN_WEEK * GNSSConstants.SEC_IN_DAY + gpsSow) * 1000L;
-
-            long timeRx = (long) (fullTime);
-            for (GNSSData gnssData: positioningData.gnssDataArrayList) {//通过key遍历哈希表
-                if (timeRx!=gnssData.getunixTime()) {//通过时间戳判断历元是否更新
-                    String prnAndF=gnssData.getPrnAndF();
-                    if(!positioningData.computDatahash.containsKey(prnAndF)){
-                        gnssData.setunixTime(timeRx);
-                        positioningData.computDatahash.put(prnAndF,gnssData);
-                    }
-                    else {
-                        positioningData.computDatahash.get(prnAndF).setPrn(prnAndF);
-                        positioningData.computDatahash.get(prnAndF).setSATstate(gnssData.getSATstate());
-                        positioningData.computDatahash.get(prnAndF).setpseudorange(gnssData.getpseudorange());
-                        positioningData.computDatahash.get(prnAndF).setphase(gnssData.getphase());
-                        positioningData.computDatahash.get(prnAndF).setunixTime(timeRx);//从gnss哈希表中将数据转移到计算哈希表中
-                    }
-
-                    //存储接收机ECEF系位置
-                    positioningData.computDatahash.get(prnAndF).setrecevierX(position.getX());
-                    positioningData.computDatahash.get(prnAndF).setrecevierY(position.getY());
-                    positioningData.computDatahash.get(prnAndF).setrecevierZ(position.getZ());
-
-
-                    // Computation of the GPS satellite coordinates in ECEF frame
-
-//                    computeSatPositionAndVelocities(timeRx, positioningData.gnssDatahash.get(SATID).getpseudorange(), positioningData.gnssDatahash.get(SATID).getSATID(),
-//                            positioningData.gnssDatahash.get(SATID).getdtrGPS());//第一个历元接收机钟差为0
-
-
-                }
-            }
-            System.out.println("h");
-
-            //calculateSatPositionFromFtp(mrinexNavigationMnew,rxPos);
-            calculateSatPositionFromFtp1(mrinexNavigationMnew,position);
-            System.out.println("hdada");
-
-        }
-
-    }
-    public void calculateSatPositionFromFtp(RinexNavigationGpsNEW rinexNavGps, Coordinates position) {
-
-        // Make a list to hold the satellites that are to be excluded based on elevation/CN0 masking criteria
-        //根据给定的 RINEX 导航文件 和接收机位置  计算每个观测卫星的位置，并根据仰角掩码标准排除不符合条件的卫星。
-        synchronized (this) {
-            Hashtable<String,GNSSData> unusedDatahash=new Hashtable<String, GNSSData>();
-            //接收机的位置，这里用接收机的位置主要是为了计算对流层延迟
-            Coordinates rxPos = Coordinates.globalXYZInstance(position.getX(), position.getY(), position.getZ());
-
-            System.out.println("接收机近似位置：" + position.getX() + "," + position.getY() + "," + position.getZ());
-            for (String prnAndF:positioningData.computDatahash.keySet()) {//通过key遍历哈希表
-                // Computation of the GPS satellite coordinates in ECEF frame
-                //计算GPS卫星在ECEF坐标系中的坐标 地心地固系
-
-                //观测数据的时间
-                // Determine the current GPS week number
-                int gpsWeek = (int) (weekNumberNanos / Constants.NUMBER_NANO_SECONDS_PER_WEEK);
-
-                // Time of signal reception in GPS Seconds of the Week (SoW)
-                double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
-                Time tGPS = new Time(gpsWeek, gpsSow);
-
-                // Convert the time of reception from GPS SoW to UNIX time (milliseconds)
-                long timeRx = tGPS.getMsec();//UNIX time (milliseconds)
-
-                SatellitePosition rnp =rinexNavGps.getRnp().getSatPositionAndVelocities(
-                        timeRx,//观测数据的时间
-                        positioningData.computDatahash.get(prnAndF).getpseudorange(),
-                        positioningData.computDatahash.get(prnAndF).getSATID(),
-                        positioningData.computDatahash.get(prnAndF).getGnssType(),
-                        0.0
-                );
-
-
-                if (rnp == null) {
-                    //positioningData.computDatahash.remove(prnAndF);
-                    unusedDatahash.put(prnAndF,positioningData.computDatahash.get(prnAndF));
-                    continue;
-                }
-                positioningData.computDatahash.get(prnAndF).setSp(rnp);
-                positioningData.computDatahash.get(prnAndF).setSATECEF(rnp.getSATECEF());
-                positioningData.computDatahash.get(prnAndF).setsatelliteClockError(rnp.getSatelliteClockError());
-                positioningData.computDatahash.get(prnAndF).setSATspeed(rnp.getSpeed());
-
-
-
-
-                //设置卫星相对于用户的方位角和仰角，并根据这些角度来设置伪距测量方差
-                positioningData.computDatahash.get(prnAndF).setRxTopo(
-                        new TopocentricCoordinates(
-                                rxPos,
-                                rnp));
-
-                //Add to the exclusion list the satellites that do not pass the masking criteria
-                if (positioningData.computDatahash.get(prnAndF).getRxTopo().getElevation() < MASK_ELEVATION) {
-                    unusedDatahash.put(prnAndF,positioningData.computDatahash.get(prnAndF));
-                    continue;
-                }
-
-
-                //计算累计的误差，包括对流层延迟和电离层延迟
-                //遍历计算三种误差并累加
-                double accumulatedCorrection = 0;
-
-//                IonoCorrection ionoCorrection=new IonoCorrection();
-//                ionoCorrection.calculateCorrection(new Time(timeRx), rxPos, rnp, rinexNavGps);
-//                accumulatedCorrection+=ionoCorrection.getCorrection();
-
-                TropoCorrection tropoCorrection=new TropoCorrection();
-                tropoCorrection.calculateCorrection(new Time(timeRx), rxPos, rnp);
-                accumulatedCorrection+=tropoCorrection.getCorrection();
-
-                ShapiroCorrection shapiroCorrection=new ShapiroCorrection();
-                shapiroCorrection.calculateCorrection(new Time(timeRx), rxPos, rnp);
-                accumulatedCorrection+=shapiroCorrection.getCorrection();
-
-
-                positioningData.computDatahash.get(prnAndF).setAccumulatedCorrection(accumulatedCorrection);
-            }
-
-            for (String key : unusedDatahash.keySet()) {
-                positioningData.computDatahash.remove(key);
-            }
-
-        }
-    }
-
-
-    public void calculateSatPositionFromFtp1(RinexNavigationGpsNEW rinexNavGps, Coordinates position) {
-        // Make a list to hold the satellites that are to be excluded based on elevation/CN0 masking criteria
-        //根据给定的 RINEX 导航文件 和接收机位置  计算每个观测卫星的位置，并根据仰角掩码标准排除不符合条件的卫星。
-
-
-        synchronized (this) {
-            positioningData.computDataList.clear();
-
-            for(int i=0;i <positioningData.gnssDataArrayListtest.size();i++)
-            {
-                // Computation of the GPS satellite coordinates in ECEF frame
-                //计算GPS卫星在ECEF坐标系中的坐标 地心地固系
-
-                //观测数据的时间
-                // Determine the current GPS week number
-                int gpsWeek = (int) (weekNumberNanos / Constants.NUMBER_NANO_SECONDS_PER_WEEK);
-
-                // Time of signal reception in GPS Seconds of the Week (SoW)
-                double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
-                Time tGPS = new Time(gpsWeek, gpsSow);
-
-                // Convert the time of reception from GPS SoW to UNIX time (milliseconds)
-                long timeRx = tGPS.getMsec();//UNIX time (milliseconds)
-//                SatellitePosition rnp = rinexNavGps.getSatPositionAndVelocities(
-//                        timeRx,//观测数据的时间
-//                        positioningData.gnssDataArrayListtest.get(i).getpseudorange(),
-//                        positioningData.gnssDataArrayListtest.get(i).getSATID(),
-//                        'G',
-//                        0.0
-//                );
-                SatellitePosition rnp =rinexNavGps.getRnp().getSatPositionAndVelocities(
-                        timeRx,//观测数据的时间
-                        positioningData.gnssDataArrayListtest.get(i).getpseudorange(),
-                        positioningData.gnssDataArrayListtest.get(i).getSATID(),
-                        'G',
-                        0.0
-                );
-
-                if (rnp == null) {
-                    continue;
-                }
-                positioningData.gnssDataArrayListtest.get(i).setSp(rnp);
-
-                //设置卫星相对于用户的方位角和仰角，并根据这些角度来设置伪距测量方差
-                positioningData.gnssDataArrayListtest.get(i).setRxTopo(
-                        new TopocentricCoordinates(
-                                position,
-                                positioningData.gnssDataArrayListtest.get(i).getSp()));
-
-                //Add to the exclusion list the satellites that do not pass the masking criteria
-                if (positioningData.gnssDataArrayListtest.get(i).getRxTopo().getElevation() < MASK_ELEVATION) {
-                    continue;
-                }
-                double accumulatedCorrection = 0;
-                //计算累计的误差，包括对流层延迟和电离层延迟
-                //遍历计算三种误差并累加
-                //IonoCorrection ionoCorrection=new
-
-                TropoCorrection tropoCorrection=new TropoCorrection();
-                tropoCorrection.calculateCorrection(new Time(timeRx), position, rnp);
-                accumulatedCorrection+=tropoCorrection.getCorrection();
-
-                ShapiroCorrection shapiroCorrection=new ShapiroCorrection();
-                shapiroCorrection.calculateCorrection(new Time(timeRx), position, rnp);
-                accumulatedCorrection+=shapiroCorrection.getCorrection();
-
-
-                positioningData.gnssDataArrayListtest.get(i).setAccumulatedCorrection(accumulatedCorrection);
-
-                positioningData.computDataList.add(positioningData.gnssDataArrayListtest.get(i));
-            }
-            System.out.println("here");
 
         }
     }
