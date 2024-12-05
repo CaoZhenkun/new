@@ -41,7 +41,9 @@ public class SatellitePosition extends Coordinates{
 	private long unixTime;
 	private boolean predicted;
 	private boolean maneuver;
-  private SimpleMatrix speed;
+    private SimpleMatrix speed;
+	private double var;//卫星位置和钟的方差
+
 
 	public SatellitePosition(long unixTime, int satID, char satType, double x, double y, double z) {
 		super();
@@ -152,5 +154,13 @@ public class SatellitePosition extends Coordinates{
 		sp.satelliteClockError = this.satelliteClockError;
     sp.setSpeed( speed.get(0), speed.get(1), speed.get(2));
 		return sp;
+	}
+
+	public double getVar() {
+		return var;
+	}
+
+	public void setVar(double var) {
+		this.var = var;
 	}
 }

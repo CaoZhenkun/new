@@ -41,6 +41,11 @@ import android.widget.Toast;
 import com.example.anew.Constellations.GnssConstellation;
 import com.example.anew.Constellations.GpsTime;
 
+import com.example.anew.Ntrip.GNSSEphemericsNtrip;
+import com.example.anew.Ntrip.IonoSystemNtrip;
+import com.example.anew.Ntrip.RTCM3Client;
+import com.example.anew.Ntrip.RTCM3ClientListener;
+import com.example.anew.Ntrip.SSRsystemNtrip;
 import com.example.anew.coord.Coordinates;
 import com.google.android.material.navigation.NavigationView;
 import com.example.anew.RinexFileLogger.Rinex;
@@ -102,15 +107,16 @@ public class MainActivity3 extends AppCompatActivity  {
     //GPS时间
     private GpsTime gpsTime;
 
+    //参与运算的广播星历系统
+    private GNSSEphemericsNtrip mGNSSEphemericsNtrip;
+    private SSRsystemNtrip mSSRsystemNtrip;
+    private IonoSystemNtrip mIonoSystemNtrip;
 
     //数据类部分
     private PositioningData positioningData;
     private GnssConstellation mGnssConstellation;
-//
-//    private RTCM3Client GPSRTCM3Client;//获取广播星历
-//    private RTCM3Client SSRRTCM3Client;//获取精密星历SSR改正数
-//    private RTCM3Client IonoRTCM3Client;//获取电离层参数
-//
+
+
     private Coordinates pose;//获取的手机PGS芯片自带位置，用于平差计算
     private WeightedLeastSquares mWeightedLeastSquares;//最小二乘
 
@@ -240,12 +246,6 @@ public class MainActivity3 extends AppCompatActivity  {
             @Override
             public void run() {
                 mGnssConstellation.init(); // 初始化导航电文
-                //ntrip连接
-//                String host=sharedPreferences_spp.getString(Constants.KEY_NTRIP_HOST,Constants.DEF_NTRIP_HOST);
-//                int port=Integer.parseInt(sharedPreferences_spp .getString(Constants.KEY_NTRIP_PORT,Constants.DEF_NTRIP_PORT));
-//                String username=sharedPreferences_spp.getString(Constants.KEY_NTRIP_USERNAME,Constants.DEF_NTRIP_USERNAME);
-//                String password=sharedPreferences_spp.getString(Constants.KEY_NTRIP_PASSWORD,Constants.DEF_NTRIP_PASSWARD);
-//                mGNSSEphemericsNtrip=new GNSSEphemericsNtrip(new RTCM3Client(host,port,"RTCM3EPH01", username,password, RTCMListener));
 
 
                 uiHandler.post(new Runnable() {
@@ -259,8 +259,20 @@ public class MainActivity3 extends AppCompatActivity  {
 
             //mGnssConstellation=new GnssConstellation(sharedPreferences_spp.getInt(Constants.KEY_GPS_SYSTEM,Constants.DEF_GPS_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_GAL_SYSTEM ,Constants.DEF_GAL_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_GLO_SYSTEM,Constants.DEF_GLO_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_BDS_SYSTEM,Constants.DEF_BDS_SYSTEM),sharedPreferences_spp.getInt(Constants.KEY_QZSS_SYSTEM,Constants.DEF_QZSS_SYSTEM));
 
+        //ntrip连接
+        String host=sharedPreferences.getString(Constants.KEY_NTRIP_HOST,Constants.DEF_NTRIP_HOST);
+        int port=Integer.parseInt(sharedPreferences .getString(Constants.KEY_NTRIP_PORT,Constants.DEF_NTRIP_PORT));
+        String username=sharedPreferences.getString(Constants.KEY_NTRIP_USERNAME,Constants.DEF_NTRIP_USERNAME);
+        String password=sharedPreferences.getString(Constants.KEY_NTRIP_PASSWORD,Constants.DEF_NTRIP_PASSWARD);
+        mGNSSEphemericsNtrip=new GNSSEphemericsNtrip(new RTCM3Client(host,port,"RTCM3EPH-MGEX", "liuzancumt","liuz@2021", RTCMListener));
+        new Thread(mGNSSEphemericsNtrip,"GNSS").start();
 
+                //
+        mSSRsystemNtrip = new SSRsystemNtrip(new RTCM3Client(host, port, "SSRA00CAS0", "liuzancumt", "liuz@2021", RTCMListener1));//SSR改正信息挂载点
+        new Thread(mSSRsystemNtrip, "GNSSSSR").start();
 
+//        mIonoSystemNtrip=new IonoSystemNtrip(new RTCM3Client(host, port, "IONO01IGS0", "liuzancumt", "liuz@2021", RTCMListener2));//SSR改正信息挂载点
+//        new Thread(mIonoSystemNtrip, "GNSSSIono").start();
 
         //GNSS监听器初始化
         locationManager = (LocationManager) this.getSystemService(LOCATION_SERVICE);
@@ -270,6 +282,24 @@ public class MainActivity3 extends AppCompatActivity  {
 
 
     }
+    private RTCM3ClientListener RTCMListener=new RTCM3ClientListener() {
+        @Override
+        public void onDataReceived(byte[] data) {
+            mGNSSEphemericsNtrip.onDataReceived(data);
+        }
+    };
+    private RTCM3ClientListener RTCMListener1=new RTCM3ClientListener() {
+        @Override
+        public void onDataReceived(byte[] data) {
+            mSSRsystemNtrip.onDataReceived(data);
+        }
+    };
+//    private RTCM3ClientListener RTCMListener2=new RTCM3ClientListener() {
+//        @Override
+//        public void onDataReceived(byte[] data) {
+//            mIonoSystemNtrip.onDataReceived(data);
+//        }
+//    };
 
 
     //软件权限申请
@@ -323,7 +353,6 @@ public class MainActivity3 extends AppCompatActivity  {
             gpsTime =new GpsTime(clock);
 
             mGnssConstellation.updateMeasurements(eventArgs);
-            //mGnssConstellation.updateMeasurements1(eventArgs);
 
             textViewSizeAll.setText("历元观测数目"+ mGnssConstellation.gnssDataList.size());
             textViewSizeGps.setText("GPS"+ positioningData.gpsDataList.size());
@@ -350,7 +379,8 @@ public class MainActivity3 extends AppCompatActivity  {
 
 
             if(pose!=null){
-                mGnssConstellation.calculateSatPosition(pose);
+                mGnssConstellation.calculateSatPosition(mGNSSEphemericsNtrip,pose);
+                //mGnssConstellation.calculateSatPosition(pose);
                 textNum.setText("观测数目:"+mGnssConstellation.gnssDataList.size()+"\n"+"可使用数目:"+mGnssConstellation.testList2.size());
 
 

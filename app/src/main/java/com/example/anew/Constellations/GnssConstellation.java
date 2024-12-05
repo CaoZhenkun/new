@@ -16,6 +16,7 @@ import android.util.Log;
 import com.example.anew.Constants;
 import com.example.anew.GNSSData;
 
+import com.example.anew.Ntrip.GNSSEphemericsNtrip;
 import com.example.anew.PositioningData;
 
 import com.example.anew.coord.Coordinates;
@@ -45,7 +46,7 @@ public class GnssConstellation   {
     private static double B2a_FREQUENCY = 1.176450e9;
     private static final double E1a_FREQUENCY = 1.57542e9;
     private static double E5a_FREQUENCY = 1.17645e9;
-    private static double FREQUENCY_MATCH_RANGE = 0.1e9;
+    private static double FREQUENCY_MATCH_RANGE = 0.1e8;
     private int leapseconds = 18;
     private static double MASK_ELEVATION = 20; // degrees
 
@@ -60,7 +61,10 @@ public class GnssConstellation   {
     public static boolean approximateEqual(double a, double b, double eps) {
         return Math.abs(a - b) < eps;
     }
-
+    TropoCorrection tropoCorrection=new TropoCorrection();
+    ShapiroCorrection shapiroCorrection=new ShapiroCorrection();
+    IonoCorrection ionoCorrection=new IonoCorrection();
+    IonoCorrection_tecgrid ionoCorrection_tecgrid=new IonoCorrection_tecgrid();
 
     /**
      * 以下参数是判断参与伪距单点/差分定位的系统，1表示参与，0表示未参与
@@ -88,8 +92,8 @@ public class GnssConstellation   {
         this.QZSS_SYSTEM=QZSS_SYSTEM;
         this.positioningData=positioningData;
 
-    }
 
+    }
 
 public void updateMeasurements(GnssMeasurementsEvent event) {
 
@@ -144,6 +148,10 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
                 case GnssStatus.CONSTELLATION_QZSS:
                     type = 'J';
                     break;
+            }
+            if(type!='G')
+            {
+                continue;
             }
             long ReceivedSvTimeNanos = measurement.getReceivedSvTimeNanos();
             double TimeOffsetNanos = measurement.getTimeOffsetNanos();
@@ -1255,6 +1263,84 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
         }
 
     }
+
+    public void calculateSatPosition(GNSSEphemericsNtrip gpsEphemerisNtrip, Coordinates position) {
+        synchronized (this) {
+            testList2.clear();
+            for (GNSSData gnssData : gnssDataList) {
+                if(gnssData.getGnssType()!='C' )
+                {
+                    continue;
+                }
+                // Computation of the GPS satellite coordinates in ECEF frame
+
+                // Determine the current GPS week number
+                int gpsWeek = (int) (weekNumberNanos / GNSSConstants.NUMBER_NANO_SECONDS_PER_WEEK);
+
+                // Time of signal reception in GPS Seconds of the Week (SoW)
+                double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
+                Time tGPS = new Time(gpsWeek, gpsSow);
+
+                //Log.d(TAG,"calculateSatPosition"+tGPS.toString());
+
+                // Convert the time of reception from GPS SoW to UNIX time (milliseconds)
+                long timeRx = tGPS.getMsec();
+
+                SatellitePosition sp = gpsEphemerisNtrip.getSatPositionAndVelocities(
+                        timeRx,
+                        gnssData.getpseudorange(),
+                        gnssData.getSATID(),
+                        gnssData.getGnssType(),
+                        0.0
+                );
+
+                if (sp == null) {
+                    continue;
+                }
+//                if(observedSatellite.getPhase()==0){
+//                    excludedSatellites.add(observedSatellite);
+//                    continue;
+//                }//PPP计算中将不含有载波的卫星剔除
+//                if(observedSatellite.getADRstate()!=17){
+//                    excludedSatellites.add(observedSatellite);
+//                    continue;
+//                }//PPP计算中将含有周跳的卫星剔除
+//                if(observedSatellite.getADRstateUncertaintyMeters()>3e-3){
+//                    excludedSatellites.add(observedSatellite);
+//                    continue;
+//                }//PPP计算中将载波不合格的卫星剔除
+
+
+                gnssData.setSp(sp);
+
+                gnssData.setRxTopo(
+                        new TopocentricCoordinates(
+                                position,
+                                gnssData.getSp()));
+
+                //Add to the exclusion list the satellites that do not pass the masking criteria
+                if (gnssData.getRxTopo().getElevation() < MASK_ELEVATION) {
+                    continue;
+                }
+                System.out.println("calculateSatPosition  此卫星高度角"+gnssData.getRxTopo().getElevation()+"\\"+gnssData.getRxTopo().getAzimuth());
+                double accumulatedCorrection = 0;
+                //计算累计的误差，包括对流层延迟,和相对论效应
+                tropoCorrection.calculateCorrection(new Time(timeRx), position, gnssData.getSp(),mrinexNavigationMnew);
+                shapiroCorrection.calculateCorrection(new Time(timeRx), position, gnssData.getSp(),mrinexNavigationMnew);
+//                ionoCorrection_tecgrid.calculateCorrection(new Time(timeRx), position, gnssData.getSp());
+                accumulatedCorrection=accumulatedCorrection+shapiroCorrection.getCorrection()+tropoCorrection.getCorrection();
+
+                //System.out.println("calculateSatPosition 此卫星误差为G：" + observedSatellite.getSatId() + "," + accumulatedCorrection);
+
+                gnssData.setAccumulatedCorrection(accumulatedCorrection);
+
+                testList2.add(gnssData);
+            }
+
+
+        }
+    }
+
     public void calculateSatPosition( Coordinates position) {
 
         // Make a list to hold the satellites that are to be excluded based on elevation/CN0 masking criteria
@@ -1304,32 +1390,18 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
 
                 //Add to the exclusion list the satellites that do not pass the masking criteria
                 if (gnssData.getRxTopo().getElevation() < MASK_ELEVATION) {
-//                    continue;
+                    continue;
                 }
 
                 //计算累计的误差，包括对流层延迟和电离层延迟
                 //遍历计算三种误差并累加
-                ArrayList<Correction> corrections = new ArrayList<>();
-                IonoCorrection ionoCorrection=new IonoCorrection();
-                TropoCorrection tropoCorrection=new TropoCorrection();
-                ShapiroCorrection shapiroCorrection=new ShapiroCorrection();
-                corrections.add(ionoCorrection);
-                corrections.add(tropoCorrection);
-                corrections.add(shapiroCorrection);
+
                 double accumulatedCorrection = 0;
 
-
-                for (Correction correction : corrections) {
-
-                    correction.calculateCorrection(
-                            new Time(timeRx),
-                            position,
-                            gnssData.getSp(),
-                            mrinexNavigationMnew);
-
-                    accumulatedCorrection += correction.getCorrection();
-
-                }
+                tropoCorrection.calculateCorrection(new Time(timeRx), position, gnssData.getSp(),mrinexNavigationMnew);
+                shapiroCorrection.calculateCorrection(new Time(timeRx), position, gnssData.getSp(),mrinexNavigationMnew);
+                ionoCorrection.calculateCorrection(new Time(timeRx), position, gnssData.getSp(),mrinexNavigationMnew);
+                accumulatedCorrection=accumulatedCorrection+ionoCorrection.getCorrection()+shapiroCorrection.getCorrection()+tropoCorrection.getCorrection();
 
                 gnssData.setAccumulatedCorrection(accumulatedCorrection);
 
