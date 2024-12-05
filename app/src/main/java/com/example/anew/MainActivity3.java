@@ -240,7 +240,7 @@ public class MainActivity3 extends AppCompatActivity  {
         int param3 = sharedPreferences.getInt(Constants.KEY_GLO_SYSTEM, 0); // 默认值为 0
         int param4 = sharedPreferences.getInt(Constants.KEY_BDS_SYSTEM, 0); // 默认值为 0
         int param5 = sharedPreferences.getInt(Constants.KEY_QZSS_SYSTEM, 0); // 默认值为 0
-        mGnssConstellation = new GnssConstellation(uiHandler,1, 1, 1, 1, 1,positioningData);
+        mGnssConstellation = new GnssConstellation(uiHandler,param1, param2, param3, param4, param5,positioningData);
         //mGnssConstellation=new GnssConstellation(1,0,0,0,0);
         new Thread(new Runnable() {
             @Override
@@ -278,8 +278,6 @@ public class MainActivity3 extends AppCompatActivity  {
         locationManager = (LocationManager) this.getSystemService(LOCATION_SERVICE);
         registerGnssMeasurements();
         registerLocation();
-
-
 
     }
     private RTCM3ClientListener RTCMListener=new RTCM3ClientListener() {
@@ -375,9 +373,6 @@ public class MainActivity3 extends AppCompatActivity  {
             if(sharedPreferences.getInt(Constants.KEY_doublefrequency,0)==1)
             {
             }
-
-
-
             if(pose!=null){
                 mGnssConstellation.calculateSatPosition(mGNSSEphemericsNtrip,pose);
                 //mGnssConstellation.calculateSatPosition(pose);

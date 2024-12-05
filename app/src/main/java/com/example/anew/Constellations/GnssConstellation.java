@@ -55,6 +55,7 @@ public class GnssConstellation   {
     private double BiasNanos;
     protected double tRxGPS;
     protected double weekNumberNanos;
+    protected double tRxGlonass;
     private Handler uiHandler;
     public List<GNSSData> gnssDataList=new ArrayList<>();
     public List<GNSSData> testList2=new ArrayList<>();
@@ -134,25 +135,30 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
             char type = ' ';
             switch (constellationType) {
                 case GnssStatus.CONSTELLATION_GPS:
+                    if(this.GPS_SYSTEM!=1){continue;}
                     type = 'G';
                     break;
                 case GnssStatus.CONSTELLATION_GALILEO:
+                    if(this.GAL_SYSTEM!=1){continue;}
                     type = 'E';
                     break;
                 case GnssStatus.CONSTELLATION_GLONASS:
+                    if(this.GLO_SYSTEM!=1){continue;}
                     type = 'R';
                     break;
                 case GnssStatus.CONSTELLATION_BEIDOU:
+                    if(this.BDS_SYSTEM!=1){continue;}
                     type = 'C';
                     break;
                 case GnssStatus.CONSTELLATION_QZSS:
+                    if(this.QZSS_SYSTEM!=1){continue;}
                     type = 'J';
                     break;
             }
-            if(type!='G')
-            {
-                continue;
-            }
+//            if(type!='C' )
+//            {
+//                continue;
+//            }
             long ReceivedSvTimeNanos = measurement.getReceivedSvTimeNanos();
             double TimeOffsetNanos = measurement.getTimeOffsetNanos();
             weekNumberNanos = Math.floor((-1. * FullBiasNanos) / Constants.NUMBER_NANO_SECONDS_PER_WEEK) * Constants.NUMBER_NANO_SECONDS_PER_WEEK;
@@ -171,6 +177,11 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
             double tTxSeconds = ReceivedSvTimeNanos * 1e-9;
 
             if ((type=='R')) {
+                double dayNumberNanos = Math.floor((-1. * FullBiasNanos) / GNSSConstants.NUMBER_NANO_SECONDS_PER_DAY)
+                        * GNSSConstants.NUMBER_NANO_SECONDS_PER_DAY;
+                tRxGlonass = tRxGPS - dayNumberNanos + 10800e9 - 18e9;
+
+
                 double tRxSeconds_GLO = tRxSeconds % 86400;
                 double tTxSeconds_GLO = tTxSeconds - 10800 + leapseconds;
                 if (tTxSeconds_GLO < 0) {
@@ -205,6 +216,11 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
             }
             if (codeLock && (towDecoded || towKnown) && pseudorange < 1e9) { // && towUncertainty
                 GNSSData gnssData=new GNSSData();
+                gnssData.settRxGPS(tRxGPS);
+                gnssData.setWeekNumberNanos(weekNumberNanos);
+                if(type=='R'){
+                    gnssData.settRxGlonass(tRxGlonass);
+                }
                 gnssData.setSATstate(1);
                 gnssData.setGnssType(type);
                 gnssData.setSATID(measurement.getSvid());
@@ -1268,20 +1284,21 @@ public void updateMeasurements(GnssMeasurementsEvent event) {
         synchronized (this) {
             testList2.clear();
             for (GNSSData gnssData : gnssDataList) {
-                if(gnssData.getGnssType()!='C' )
-                {
-                    continue;
-                }
+
                 // Computation of the GPS satellite coordinates in ECEF frame
 
                 // Determine the current GPS week number
-                int gpsWeek = (int) (weekNumberNanos / GNSSConstants.NUMBER_NANO_SECONDS_PER_WEEK);
+
+                int gpsWeek = (int) (gnssData.getWeekNumberNanos() / GNSSConstants.NUMBER_NANO_SECONDS_PER_WEEK);
 
                 // Time of signal reception in GPS Seconds of the Week (SoW)
-                double gpsSow = (tRxGPS - weekNumberNanos) * 1e-9;
+                double gpsSow = (gnssData.gettRxGPS() - gnssData.getWeekNumberNanos()) * 1e-9;
                 Time tGPS = new Time(gpsWeek, gpsSow);
 
-                //Log.d(TAG,"calculateSatPosition"+tGPS.toString());
+                if(gnssData.getGnssType()=='R'){
+                    gpsSow = (gnssData.gettRxGlonass() - gnssData.getWeekNumberNanos()) * 1e-9;
+                    tGPS = new Time(gpsWeek, gpsSow);
+                }
 
                 // Convert the time of reception from GPS SoW to UNIX time (milliseconds)
                 long timeRx = tGPS.getMsec();

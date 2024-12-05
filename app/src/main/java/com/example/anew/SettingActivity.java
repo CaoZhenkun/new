@@ -96,6 +96,16 @@ public class SettingActivity extends AppCompatActivity {
                                 dialog.dismiss();
                                 Log.d(TAG, ":::" + Arrays.toString(dialog.getSelectedIndices()));
                                 Integer[] index = dialog.getSelectedIndices();
+
+                                // 重置所有选项的值为默认值
+                                sharedPreferences.edit()
+                                        .putInt(Constants.KEY_GPS_SYSTEM, 0)
+                                        .putInt(Constants.KEY_GLO_SYSTEM, 0)
+                                        .putInt(Constants.KEY_GAL_SYSTEM, 0)
+                                        .putInt(Constants.KEY_BDS_SYSTEM, 0)
+                                        .putInt(Constants.KEY_QZSS_SYSTEM, 0)
+                                        .apply();
+
                                 textViewGnssSystem.setText("");
                                 for (int i = 0; i < index.length; i++) {
                                     switch (index[i]) {

@@ -35,9 +35,10 @@ public class GNSSData{//GNSS数据类
     private double frontresiduals;//先验残差
     private double afterresiduals;//后验残差
     private double phase;//载波相位观测值
-
     private double pseudorange;//伪距观测值
-
+    private double tRxGPS;
+    private double weekNumberNanos;
+    private double tRxGlonass;
 //        private double pseudorangeFree;
 //        private double PseudorangeSmooth;
 
@@ -172,5 +173,29 @@ public class GNSSData{//GNSS数据类
 
     public void setSp(SatellitePosition sp) {
         this.sp = sp;
+    }
+
+    public double gettRxGPS() {
+        return tRxGPS;
+    }
+
+    public void settRxGPS(double tRxGPS) {
+        this.tRxGPS = tRxGPS;
+    }
+
+    public double getWeekNumberNanos() {
+        return weekNumberNanos;
+    }
+
+    public void setWeekNumberNanos(double weekNumberNanos) {
+        this.weekNumberNanos = weekNumberNanos;
+    }
+
+    public double gettRxGlonass() {
+        return tRxGlonass;
+    }
+
+    public void settRxGlonass(double tRxGlonass) {
+        this.tRxGlonass = tRxGlonass;
     }
 }
